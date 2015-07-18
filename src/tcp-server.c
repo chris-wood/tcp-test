@@ -33,17 +33,19 @@ TCPServer_ServeClient(TCPServer *server, TCPClient *client)
         LogFatal("recv() failed");
     }
 
-    while (recvMsgSize > 0) {
-        // Send message back to the client...
-        if (send(client->socket, nameBuffer, recvMsgSize, 0) != recvMsgSize) {
-            LogFatal("send() failed");
-        }
+    // while (recvMsgSize > 0) {
+    //     // Send message back to the client...
+    //     if (send(client->socket, nameBuffer, recvMsgSize, 0) != recvMsgSize) {
+    //         LogFatal("send() failed");
+    //     }
 
-        // get some data...
-        if ((recvMsgSize = recv(client->socket, nameBuffer, RCVBUFSIZE, 0)) < 0) {
-            LogFatal("recv() failed");
-        }
-    }
+    //     // get some data...
+    //     if ((recvMsgSize = recv(client->socket, nameBuffer, RCVBUFSIZE, 0)) < 0) {
+    //         LogFatal("recv() failed");
+    //     }
+    // }
+
+    fprintf(stderr, "Reading %s\n", nameBuffer);
 
     FILE *fp = fopen(nameBuffer, "r");
     if (fp != NULL) {
