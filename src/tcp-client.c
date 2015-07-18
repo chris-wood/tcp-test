@@ -43,7 +43,6 @@ main(int argc, char *argv[])
     echoServAddr.sin_port = htons(echoServPort);
 
     if (connect(sock, (struct sockaddr *) &echoServAddr, sizeof(echoServAddr)) < 0) {
-        
         LogFatal("connect() failed");
     }
 
@@ -54,7 +53,9 @@ main(int argc, char *argv[])
     }
 
     totalBytesRcvd = 0;
-    printf("Received: "); 
+#if DEBUG
+    fprintf(stderr, "Received: "); 
+#endif
     while (totalBytesRcvd < echoStringLen) {
         /* Receive up to the buffer size (minus 1 to leave space for
            a null terminator) bytes from the sender */
@@ -63,10 +64,14 @@ main(int argc, char *argv[])
         }
         totalBytesRcvd += bytesRcvd;
         echoBuffer[bytesRcvd] = '\0';
-        printf("%s", echoBuffer);
+#if DEBUG
+        fprintf("%s", echoBuffer);
+#endif
     }
 
-    printf("\n");
+#if DEBUG
+    fprintf("\n");
+#endif
 
     close(sock);
 

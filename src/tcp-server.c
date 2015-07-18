@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include "tcp-util.h"
 
+#define FILE_BUFFER_LENGTH 256
+
 typedef struct {
     int socket;
     struct sockaddr_in address;
@@ -24,23 +26,42 @@ typedef struct {
 void 
 TCPServer_ServeClient(TCPServer *server, TCPClient *client)
 {
-    char echoBuffer[RCVBUFSIZE];
+    char nameBuffer[RCVBUFSIZE];
     int recvMsgSize;
 
-    if ((recvMsgSize = recv(client->socket, echoBuffer, RCVBUFSIZE, 0)) < 0) {
+    if ((recvMsgSize = recv(client->socket, nameBuffer, RCVBUFSIZE, 0)) < 0) {
         LogFatal("recv() failed");
     }
 
     while (recvMsgSize > 0) {
         // Send message back to the client...
-        if (send(client->socket, echoBuffer, recvMsgSize, 0) != recvMsgSize) {
+        if (send(client->socket, nameBuffer, recvMsgSize, 0) != recvMsgSize) {
             LogFatal("send() failed");
         }
 
         // get some data...
-        if ((recvMsgSize = recv(client->socket, echoBuffer, RCVBUFSIZE, 0)) < 0) {
+        if ((recvMsgSize = recv(client->socket, nameBuffer, RCVBUFSIZE, 0)) < 0) {
             LogFatal("recv() failed");
         }
+    }
+
+    FILE *fp = fopen(nameBuffer, "r");
+    if (fp != NULL) {
+        char *message = "File does not exist";
+        int length = strlen(message);
+        if (send(client->socket, message, length, 0) != length) {
+            LogFatal("send() failed");
+        }
+    }
+
+    char fileBuffer[FILE_BUFFER_LENGTH];
+    size_t numBytesRead = 0;
+    while (!feof(fp)) {
+        numBytesRead = fread(fileBuffer, 1, FILE_BUFFER_LENGTH, fp);
+        if (numBytesRead != FILE_BUFFER_LENGTH && !feof(fp)) {
+            LogFatal("fread() failed");
+        }
+        send(client->socket, fileBuffer, numBytesRead, 0);
     }
 
     close(client->socket);
@@ -52,7 +73,7 @@ main(int argc, char *argv[])
     TCPServer server;
 
     if (argc != 3) {
-        fprintf(stderr, "Usage:  %s <Server Port> <Directory>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <Server Port> <Directory>\n", argv[0]);
         exit(1);
     }
 
@@ -78,8 +99,7 @@ main(int argc, char *argv[])
         LogFatal("listen() failed");
     }
 
-    for (;;)
-    {
+    for (;;) {
         TCPClient client;
         client.length = sizeof(client.address);
 
@@ -87,7 +107,9 @@ main(int argc, char *argv[])
             LogFatal("accept() failed");
         }   
 
+#if DEBUG
         fprintf(stderr, "Handling client %s\n", inet_ntoa(client.address.sin_addr));
+#endif
 
         TCPServer_ServeClient(&server, &client);
     }
