@@ -83,16 +83,16 @@ main(int argc, char *argv[])
         TCPClient client;
         client.length = sizeof(client.address);
 
-        /* Wait for a client to connect */
-        if ((client.socket = accept(server.socket, (struct sockaddr *) &(client.address), 
-                               &client.length)) < 0) {
+        if ((client.socket = accept(server.socket, (struct sockaddr *) &(client.address), &client.length)) < 0) {
             LogFatal("accept() failed");
         }   
 
-        printf("Handling client %s\n", inet_ntoa(client.address.sin_addr));
+        fprintf(stderr, "Handling client %s\n", inet_ntoa(client.address.sin_addr));
 
         TCPServer_ServeClient(&server, &client);
     }
+
+    free(server->directory);
     
     return 0;
 }
