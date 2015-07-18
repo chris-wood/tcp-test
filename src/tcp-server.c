@@ -80,7 +80,7 @@ main(int argc, char *argv[])
     server.port = atoi(argv[1]);
     server.directoryLength = strlen(argv[2]);
     server.directory = (char *) malloc(server.directoryLength * sizeof(char));
-    strncpy(server.directory, argv[2], directoryLength);
+    strncpy(server.directory, argv[2], server.directoryLength);
 
     if ((server.socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
         LogFatal("socket() failed");
@@ -114,7 +114,7 @@ main(int argc, char *argv[])
         TCPServer_ServeClient(&server, &client);
     }
 
-    free(server->directory);
+    free(server.directory);
     
     return 0;
 }

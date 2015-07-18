@@ -65,12 +65,12 @@ main(int argc, char *argv[])
         totalBytesRcvd += bytesRcvd;
         echoBuffer[bytesRcvd] = '\0';
 #if DEBUG
-        fprintf("%s", echoBuffer);
+        fprintf(stderr, "%s", echoBuffer);
 #endif
     }
 
 #if DEBUG
-    fprintf("\n");
+    fprintf(stderr, "\n");
 #endif
 
     close(sock);
