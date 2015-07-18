@@ -10,24 +10,22 @@
 int 
 main(int argc, char *argv[])
 {
-    int sock;                        /* Socket descriptor */
-    struct sockaddr_in echoServAddr; /* Echo server address */
-    unsigned short echoServPort;     /* Echo server port */
-    char *servIP;                    /* Server IP address (dotted quad) */
-    char *echoString;                /* String to send to echo server */
-    char echoBuffer[RCVBUFSIZE];     /* Buffer for echo string */
-    unsigned int echoStringLen;      /* Length of string to echo */
-    int bytesRcvd, totalBytesRcvd;   /* Bytes read in single recv() 
-                                        and total bytes read */
+    int sock;
+    struct sockaddr_in echoServAddr;
+    unsigned short echoServPort;
+    char *servIP;
+    char *echoString;
+    char echoBuffer[RCVBUFSIZE];
+    unsigned int echoStringLen;
+    int bytesRcvd, totalBytesRcvd;
 
     if ((argc < 3) || (argc > 4)) {
-       fprintf(stderr, "Usage: %s <Server IP> <Echo Word> [<Echo Port>]\n",
-               argv[0]);
+       fprintf(stderr, "Usage: %s <Server IP> <Echo Word> [<Echo Port>]\n", argv[0]);
        exit(1);
     }
 
-    servIP = argv[1];             /* First arg: server IP address (dotted quad) */
-    echoString = argv[2];         /* Second arg: string to echo */
+    servIP = argv[1];
+    echoString = argv[2];
 
     if (argc == 4) {
         echoServPort = atoi(argv[3]); /* Use given port, if any */
@@ -39,18 +37,18 @@ main(int argc, char *argv[])
         LogFatal("socket() failed");
     }
 
-    memset(&echoServAddr, 0, sizeof(echoServAddr));     /* Zero out structure */
-    echoServAddr.sin_family      = AF_INET;             /* Internet address family */
-    echoServAddr.sin_addr.s_addr = inet_addr(servIP);   /* Server IP address */
-    echoServAddr.sin_port        = htons(echoServPort); /* Server port */
+    memset(&echoServAddr, 0, sizeof(echoServAddr)); 
+    echoServAddr.sin_family = AF_INET;
+    echoServAddr.sin_addr.s_addr = inet_addr(servIP);
+    echoServAddr.sin_port = htons(echoServPort);
 
     if (connect(sock, (struct sockaddr *) &echoServAddr, sizeof(echoServAddr)) < 0) {
+        
         LogFatal("connect() failed");
     }
 
     echoStringLen = strlen(echoString);
 
-    /* Send the string to the server */
     if (send(sock, echoString, echoStringLen, 0) != echoStringLen) {
         LogFatal("send() sent a different number of bytes than expected");
     }
@@ -63,12 +61,12 @@ main(int argc, char *argv[])
         if ((bytesRcvd = recv(sock, echoBuffer, RCVBUFSIZE - 1, 0)) <= 0) {
             LogFatal("recv() failed or connection closed prematurely");
         }
-        totalBytesRcvd += bytesRcvd;   /* Keep tally of total bytes */
-        echoBuffer[bytesRcvd] = '\0';  /* Terminate the string! */
-        printf("%s", echoBuffer);      /* Print the echo buffer */
+        totalBytesRcvd += bytesRcvd;
+        echoBuffer[bytesRcvd] = '\0';
+        printf("%s", echoBuffer);
     }
 
-    printf("\n");    /* Print a final linefeed */
+    printf("\n");
 
     close(sock);
 

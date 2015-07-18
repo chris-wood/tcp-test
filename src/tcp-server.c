@@ -10,6 +10,9 @@ typedef struct {
     int socket;
     struct sockaddr_in address;
     unsigned short port;
+
+    int directoryLength;
+    char *directory;
 } TCPServer;
 
 typedef struct {
@@ -24,7 +27,6 @@ TCPServer_ServeClient(TCPServer *server, TCPClient *client)
     char echoBuffer[RCVBUFSIZE];
     int recvMsgSize;
 
-    // get some data...
     if ((recvMsgSize = recv(client->socket, echoBuffer, RCVBUFSIZE, 0)) < 0) {
         LogFatal("recv() failed");
     }
@@ -49,12 +51,15 @@ main(int argc, char *argv[])
 {
     TCPServer server;
 
-    if (argc != 2) {
-        fprintf(stderr, "Usage:  %s <Server Port>\n", argv[0]);
+    if (argc != 3) {
+        fprintf(stderr, "Usage:  %s <Server Port> <Directory>\n", argv[0]);
         exit(1);
     }
 
-    server.port = atoi(argv[1]);  /* First arg:  local port */
+    server.port = atoi(argv[1]);
+    server.directoryLength = strlen(argv[2]);
+    server.directory = (char *) malloc(server.directoryLength * sizeof(char));
+    strncpy(server.directory, argv[2], directoryLength);
 
     if ((server.socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
         LogFatal("socket() failed");
