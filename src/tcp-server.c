@@ -24,21 +24,24 @@ TCPServer_ServeClient(TCPServer *server, TCPClient *client)
     char echoBuffer[RCVBUFSIZE];
     int recvMsgSize;
 
+    // get some data...
     if ((recvMsgSize = recv(client->socket, echoBuffer, RCVBUFSIZE, 0)) < 0) {
         LogFatal("recv() failed");
     }
 
     while (recvMsgSize > 0) {
-        // Send message back to the client
+        // Send message back to the client...
         if (send(client->socket, echoBuffer, recvMsgSize, 0) != recvMsgSize) {
             LogFatal("send() failed");
         }
 
-        if ((recvMsgSize = recv(clntSocket, echoBuffer, RCVBUFSIZE, 0)) < 0)
-            DieWithError("recv() failed");
+        // get some data...
+        if ((recvMsgSize = recv(client->socket, echoBuffer, RCVBUFSIZE, 0)) < 0) {
+            LogFatal("recv() failed");
+        }
     }
 
-    close(clntSocket);    /* Close client socket */
+    close(client->socket);
 }
 
 int 
