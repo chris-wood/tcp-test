@@ -17,7 +17,7 @@ main(int argc, char *argv[])
     char *fileName;
     char serverResponseBuffer[RCVBUFSIZE];
     unsigned int fileNameLen;
-    int bytesRcvd, totalBytesRcvd;
+    int bytesReceived, totalBytesRcvd;
 
     if (argc != 4) {
        fprintf(stderr, "usage: %s <Server IP Address> <File Name> <Port>\n", argv[0]);
@@ -53,12 +53,12 @@ main(int argc, char *argv[])
 #endif
     for (;;) {
 
-        bytesRcvd = recv(sock, serverResponseBuffer, RCVBUFSIZE, 0);
-        totalBytesRcvd += bytesRcvd;
-        
-        printf("%s", serverResponseBuffer);
+        bytesReceived = recv(sock, serverResponseBuffer, RCVBUFSIZE, 0);
+        totalBytesRcvd += bytesReceived;
 
-        if (bytesRcvd < RCVBUFSIZE) {
+        printf("%.*s", bytesReceived, serverResponseBuffer);
+
+        if (bytesReceived < RCVBUFSIZE) {
             break;
         }
     }
