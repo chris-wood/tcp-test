@@ -1,9 +1,10 @@
 #include <stdio.h> 
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+
 #include "tcp-util.h"
 
 #define FILE_BUFFER_LENGTH 256
@@ -26,47 +27,62 @@ typedef struct {
 void 
 TCPServer_ServeClient(TCPServer *server, TCPClient *client)
 {
-    char nameBuffer[RCVBUFSIZE];
+    char *nameBuffer = (char *) malloc(RCVBUFSIZE * sizeof(char));
     int recvMsgSize;
 
     if ((recvMsgSize = recv(client->socket, nameBuffer, RCVBUFSIZE, 0)) < 0) {
         LogFatal("recv() failed");
     }
 
-    // while (recvMsgSize > 0) {
-    //     // Send message back to the client...
-    //     if (send(client->socket, nameBuffer, recvMsgSize, 0) != recvMsgSize) {
-    //         LogFatal("send() failed");
-    //     }
-
-    //     // get some data...
-    //     if ((recvMsgSize = recv(client->socket, nameBuffer, RCVBUFSIZE, 0)) < 0) {
-    //         LogFatal("recv() failed");
-    //     }
-    // }
-
-    fprintf(stderr, "Reading %s\n", nameBuffer);
+    if (recvMsgSize < RCVBUFSIZE) {
+        nameBuffer[recvMsgSize] = 0; // null terminator
+    } else {
+        // read more and expand the buffer
+    }
 
     FILE *fp = fopen(nameBuffer, "r");
-    if (fp != NULL) {
-        char *message = "File does not exist";
+    if (fp == NULL) {
+
+#if DEBUG
+        fprintf(stderr, "File %s does not exist", nameBuffer);
+#endif
+
+        char *message;
+        asprintf(&message, "File %s does not exist", nameBuffer);
+
         int length = strlen(message);
         if (send(client->socket, message, length, 0) != length) {
             LogFatal("send() failed");
         }
-    }
+    } else {
 
-    char fileBuffer[FILE_BUFFER_LENGTH];
-    size_t numBytesRead = 0;
-    while (!feof(fp)) {
-        numBytesRead = fread(fileBuffer, 1, FILE_BUFFER_LENGTH, fp);
-        if (numBytesRead != FILE_BUFFER_LENGTH && !feof(fp)) {
-            LogFatal("fread() failed");
+#if DEBUG
+        fprintf(stderr, "Reading file: %s", nameBuffer);
+#endif
+
+        char fileBuffer[FILE_BUFFER_LENGTH];
+        size_t numBytesRead = 0;
+        for (;;) {
+
+            fprintf(stderr, "...\n");
+
+            numBytesRead = fread(fileBuffer, 1, FILE_BUFFER_LENGTH, fp);
+            if (send(client->socket, fileBuffer, numBytesRead, 0) != numBytesRead) {
+                LogFatal("Error sending data to the client\n");
+            }
+
+            if (numBytesRead != FILE_BUFFER_LENGTH) {
+                break;
+            }
         }
-        send(client->socket, fileBuffer, numBytesRead, 0);
+
+        close(client->socket);
     }
 
-    close(client->socket);
+#if DEBUG
+    fprintf(stderr, "Done serving the client...\n");
+#endif
+    free(nameBuffer);
 }
 
 int 
@@ -114,6 +130,10 @@ main(int argc, char *argv[])
 #endif
 
         TCPServer_ServeClient(&server, &client);
+
+#if DEBUG
+        fprintf(stderr, "Done with client %s\n", inet_ntoa(client.address.sin_addr));
+#endif
     }
 
     free(server.directory);
