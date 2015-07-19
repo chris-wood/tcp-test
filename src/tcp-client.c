@@ -51,16 +51,16 @@ main(int argc, char *argv[])
 #if DEBUG
     fprintf(stderr, "Received: \n"); 
 #endif
-    while (totalBytesRcvd < fileNameLen) {
-        /* Receive up to the buffer size (minus 1 to leave space for
-           a null terminator) bytes from the sender */
-        if ((bytesRcvd = recv(sock, serverResponseBuffer, RCVBUFSIZE - 1, 0)) <= 0) {
-            LogFatal("recv() failed or connection closed prematurely");
-        }
+    for (;;) {
+
+        bytesRcvd = recv(sock, serverResponseBuffer, RCVBUFSIZE, 0);
         totalBytesRcvd += bytesRcvd;
-        serverResponseBuffer[bytesRcvd] = '\0';
         
         printf("%s", serverResponseBuffer);
+
+        if (bytesRcvd < RCVBUFSIZE) {
+            break;
+        }
     }
 
 #if DEBUG
