@@ -5,7 +5,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#include "tcp-util.h"
+#include "../util.h"
 
 #define FILE_BUFFER_LENGTH 256
 

@@ -5,7 +5,7 @@
 #include <string.h>     
 #include <unistd.h>  
 
-#include "tcp-util.h"
+#include "../util.h"
 
 int 
 main(int argc, char *argv[])
