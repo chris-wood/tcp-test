@@ -15,7 +15,8 @@
 int 
 main(int argc, char *argv[])
 {
-    int connSock, in, ret, flags;
+    int connSock, in, ret, flags, bytesReceived, totalBytesRcvd;
+    struct sctp_sndrcvinfo sndrcvinfo;
     struct sockaddr_in servaddr;
     struct sctp_status status;
 
@@ -48,6 +49,20 @@ main(int argc, char *argv[])
     if (ret < 0) {
         LogFatal("sctp_sendmsg() failed");
     }
+
+    char serverRepsonseBuffer[RCVBUFSIZE];
+    for (;;) {
+        bytesReceived = sctp_recvmsg(connSock, serverRepsonseBuffer, RCVBUFSIZE, 
+          (struct sockaddr *) NULL, 0, &sndrcvinfo, &flags);
+        totalBytesRcvd += bytesReceived;
+
+        printf("%.*s", bytesReceived, serverRepsonseBuffer);
+
+        if (bytesReceived < RCVBUFSIZE) {
+            break;
+        }
+    }
+
     close(connSock);
  
     return 0;

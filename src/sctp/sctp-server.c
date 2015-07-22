@@ -71,6 +71,7 @@ main(int argc, char *argv[])
         in = sctp_recvmsg(connSock, buffer, sizeof(buffer), (struct sockaddr *)NULL, 0, &sndrcvinfo, &flags);
         
         // TODO: process the message, and then send one back out
+        // ret = sctp_sendmsg(connSock, (void *)fileName, (size_t)strlen(fileName), NULL, 0, 0, 0, 0, 0, 0);
         
         close(socket);
     }
