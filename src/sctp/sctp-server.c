@@ -70,11 +70,50 @@ main(int argc, char *argv[])
 #endif
         in = sctp_recvmsg(connSock, buffer, sizeof(buffer), (struct sockaddr *)NULL, 0, &sndrcvinfo, &flags);
         
-        // TODO: process the message, and then send one back out
-        // ret = sctp_sendmsg(connSock, (void *)fileName, (size_t)strlen(fileName), NULL, 0, 0, 0, 0, 0, 0);
-        
-        close(socket);
+        if (buffer < RCVBUFSIZE) {
+            buffer[recvMsgSize] = 0; // null terminator
+        } else {
+            // read more and expand the buffer
+        }
+
+        FILE *fp = fopen(buffer, "r");
+        if (fp == NULL) {
+#if DEBUG
+            fprintf(stderr, "File %s does not exist", nameBuffer);
+#endif
+
+            char *message;
+            asprintf(&message, "File %s does not exist", nameBuffer);
+
+            int length = strlen(message);
+            if (sctp_sendmsg(connSock, (void *)fileName, (size_t)strlen(fileName), NULL, 0, 0, 0, 0, 0, 0) != length) {
+                LogFatal("sctp_sendmsg() failed");
+            }
+        } else {
+
+#if DEBUG
+            fprintf(stderr, "Reading file: %s", nameBuffer);
+#endif
+
+            char fileBuffer[FILE_BUFFER_LENGTH];
+            bzero(buffer, FILE_BUFFER_LENGTH);
+            size_t numBytesRead = 0;
+            for (;;) {
+                fprintf(stderr, "...\n");
+
+                numBytesRead = fread(fileBuffer, 1, FILE_BUFFER_LENGTH, fp);
+                if (sctp_sendmsg(connSock, fileBuffer, numBytesRead, NULL, 0, 0, 0, 0, 0, 0) != length) {
+                    LogFatal("Error sending data to the client\n");
+                }
+
+                if (numBytesRead != FILE_BUFFER_LENGTH) {
+                    break;
+                }
+            }
+        }
     }
+        
+    close(socket);
  
     return 0;
 }

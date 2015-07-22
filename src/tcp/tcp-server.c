@@ -7,8 +7,6 @@
 
 #include "../util.h"
 
-#define FILE_BUFFER_LENGTH 256
-
 typedef struct {
     int socket;
     struct sockaddr_in address;
