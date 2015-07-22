@@ -113,7 +113,7 @@ main(int argc, char *argv[])
         LogFatal("bind() failed");
     }
         
-    if (listen(server.socket, MAX_NUMBER_OF_CONNECTIONS) < 0) {
+    if (listen(server.socket, MAX_NUMBER_OF_TCP_CONNECTIONS) < 0) {
         LogFatal("listen() failed");
     }
 

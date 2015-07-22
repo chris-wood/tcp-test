@@ -11,38 +11,44 @@
 #include "../util.h"
 
 #define MAX_BUFFER 1024
-#define MY_PORT_NUM 62324 
  
-int main()
+int 
+main(int argc, char *argv[])
 {
-  int connSock, in, i, ret, flags;
-  struct sockaddr_in servaddr;
-  struct sctp_status status;
-  char buffer[MAX_BUFFER+1];
+    int connSock, in, ret, flags;
+    struct sockaddr_in servaddr;
+    struct sctp_status status;
+
+    if (argc != 4) {
+        fprintf(stderr, "usage: %s <Server IP Address> <File Name> <Port>\n", argv[0]);
+        exit(1);
+    }
  
-  // TODO: this needs to come from a file...
-  strncpy(buffer, "Hello Server", 12);
-  buffer[12]='\0';
+    serverIPAddress = argv[1];
+    fileName = argv[2];
+    serverPort = atoi(argv[3]); 
  
-  connSock = socket( AF_INET, SOCK_STREAM, IPPROTO_SCTP );
+    connSock = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
  
-  if(connSock == -1) {
-    LogFatal("socket()");
-  }
+    if (connSock == -1) {
+        LogFatal("socket() failed");
+    }
  
-  bzero((void *)&servaddr, sizeof(servaddr));
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_port = htons(MY_PORT_NUM);
-  servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    bzero((void *)&servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(serverPort);
+    servaddr.sin_addr.s_addr = inet_addr(serverIPAddress);
  
-  ret = connect(connSock, (struct sockaddr *)&servaddr, sizeof(servaddr));
-   
-  if(ret == -1) {
-    LogFatal("connect()");
-  }
-  
-  ret = sctp_sendmsg(connSock, (void *)buffer, (size_t)strlen(buffer), NULL, 0, 0, 0, 0, 0, 0);
-  close(connSock);
+    ret = connect(connSock, (struct sockaddr *) &servaddr, sizeof(servaddr));
+    if (ret < 0) {
+        LogFatal("connect() failed");
+    }
+    
+    ret = sctp_sendmsg(connSock, (void *)fileName, (size_t)strlen(fileName), NULL, 0, 0, 0, 0, 0, 0);
+    if (ret < 0) {
+        LogFatal("sctp_sendmsg() failed");
+    }
+    close(connSock);
  
-  return 0;
+    return 0;
 }
