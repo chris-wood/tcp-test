@@ -22,7 +22,7 @@ typedef struct {
 int
 main(int argc, char **argv)
 {
-	int clientlen;
+	socklen_t clientlen;
 	struct sockaddr_in clientAddress;
 	struct hostent *hostp;
 	int numBytesReceived;
@@ -51,7 +51,7 @@ main(int argc, char **argv)
     server.serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     server.serverAddress.sin_port = htons(server.port);
 
-    if (bind(server.socket, (struct socketaddr *) &server.serverAddress, sizeof(server.serverAddress)) < 0) {
+    if (bind(server.socket, (struct sockaddr *) &(server.serverAddress), sizeof(server.serverAddress)) < 0) {
     	LogFatal("bind() failed");
     }
 
@@ -65,8 +65,8 @@ main(int argc, char **argv)
     		LogFatal("recvfrom() failed");
     	}
 
-    	if (buffer < RCVBUFSIZE) {
-            buffer[recvMsgSize] = 0; // null terminator
+    	if (numBytesReceived < RCVBUFSIZE) {
+            buffer[numBytesReceived] = 0; // null terminator
         } else {
             // TODO: read more and expand the buffer
         }
@@ -89,8 +89,9 @@ main(int argc, char **argv)
             bzero(fileBuffer, FILE_BUFFER_LENGTH);
             size_t numBytesRead = 0;
             for (;;) {
+#if DEBUG
                 fprintf(stderr, "...\n");
-
+#endif
                 numBytesRead = fread(fileBuffer, 1, FILE_BUFFER_LENGTH, fp);
                 if (sendto(server.socket, fileBuffer, strlen(fileBuffer), 0, 
                 	(struct sockaddr *) &clientAddress, clientlen) < 0) {

@@ -1,59 +1,64 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <stdio.h>
+#include <arpa/inet.h>
 
 #include "../util.h"
 
 int 
 main(int argc, char** argv)
 {
-   int socket;
-   struct sockaddr_in servaddr,cliaddr;
-   char serverResponseBuffer[RCVBUFSIZE];
-   int bytesReceived;
-   int totalBytesRcvd;
+    int socketfd;
+    struct sockaddr_in servaddr,cliaddr;
+    char serverResponseBuffer[RCVBUFSIZE];
+    int bytesReceived;
+    int totalBytesRcvd;
 
-   if (argc != 4) {
-      fprintf(stderr, "usage: %s <Server IP Address> <File Name> <Port>\n", argv[0]);
-      exit(1);
-   }
+    if (argc != 4) {
+        fprintf(stderr, "usage: %s <Server IP Address> <File Name> <Port>\n", argv[0]);
+        exit(1);
+    }
 
-   char *serverIPAddress = argv[1];
-   char *fileName = argv[2];
-   int serverPort = atoi(argv[3]); 
+    char *serverIPAddress = argv[1];
+    char *fileName = argv[2];
+    int serverPort = atoi(argv[3]); 
 
-   socket = socket(AF_INET, SOCK_DGRAM, 0);
+    socketfd = socket(AF_INET, SOCK_DGRAM, 0);
 
-   bzero(&servaddr, sizeof(servaddr));
-   servaddr.sin_family = AF_INET;
-   servaddr.sin_addr.s_addr = inet_addr(serverIPAddress);
-   servaddr.sin_port = htons(serverPort);
+    bzero(&servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = inet_addr(serverIPAddress);
+    servaddr.sin_port = htons(serverPort);
 
-   int fileNameLength = strlen(fileName)
-   if (send(socket, fileName, fileNameLength, 0) != fileNameLength) {
-      LogFatal("send() failed");
-   }
+    int fileNameLength = strlen(fileName);
+    if (send(socketfd, fileName, fileNameLength, 0) != fileNameLength) {
+        LogFatal("send() failed");
+    }
 
 #if DEBUG
-   fprintf(stderr, "Received: \n"); 
+    fprintf(stderr, "Received: \n"); 
 #endif
 
-   for (;;) {
-      bytesReceived = recv(socket, serverResponseBuffer, RCVBUFSIZE, 0);
-      totalBytesRcvd += bytesReceived;
+    for (;;) {
+        bytesReceived = recv(socketfd, serverResponseBuffer, RCVBUFSIZE, 0);
+        totalBytesRcvd += bytesReceived;
 
-      printf("%.*s", bytesReceived, serverResponseBuffer);
+        printf("%.*s", bytesReceived, serverResponseBuffer);
 
-      if (bytesReceived < RCVBUFSIZE) {
-         break;
-      }
-   }
-
-   close(socket);
+        if (bytesReceived < RCVBUFSIZE) {
+            break;
+        }
+    }
 
 #if DEBUG
     fprintf(stderr, "\n");
 #endif
+
+    close(socketfd);
 
     return 0;
 }
