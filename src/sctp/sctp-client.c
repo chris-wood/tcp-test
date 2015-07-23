@@ -5,7 +5,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
-// #include <netinet/sctp.h>
+#include <netinet/sctp.h>
 #include <arpa/inet.h>
 
 #include "../util.h"
@@ -25,9 +25,9 @@ main(int argc, char *argv[])
         exit(1);
     }
  
-    serverIPAddress = argv[1];
-    fileName = argv[2];
-    serverPort = atoi(argv[3]); 
+    char *serverIPAddress = argv[1];
+    char *fileName = argv[2];
+    int serverPort = atoi(argv[3]); 
  
     connSock = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
  
