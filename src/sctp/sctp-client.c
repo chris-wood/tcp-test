@@ -5,7 +5,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
-#include <netinet/sctp.h>
+#include <netinet/sctp.h> // will not compile on OSX -- not present
 #include <arpa/inet.h>
 
 #include "../util.h"
