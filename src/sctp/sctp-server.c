@@ -70,7 +70,7 @@ main(int argc, char *argv[])
 #endif
         in = sctp_recvmsg(connSock, buffer, sizeof(buffer), (struct sockaddr *)NULL, 0, &sndrcvinfo, &flags);
         
-        if (buffer < RCVBUFSIZE) {
+        if (in < RCVBUFSIZE) {
             buffer[recvMsgSize] = 0; // null terminator
         } else {
             // read more and expand the buffer
@@ -96,7 +96,7 @@ main(int argc, char *argv[])
 #endif
 
             char fileBuffer[FILE_BUFFER_LENGTH];
-            bzero(buffer, FILE_BUFFER_LENGTH);
+            bzero(fileBuffer, FILE_BUFFER_LENGTH);
             size_t numBytesRead = 0;
             for (;;) {
                 fprintf(stderr, "...\n");

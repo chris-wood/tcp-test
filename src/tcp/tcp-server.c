@@ -110,6 +110,10 @@ main(int argc, char *argv[])
     if (bind(server.socket, (struct sockaddr *) &(server.address), sizeof(server.address)) < 0) {
         LogFatal("bind() failed");
     }
+
+    // set address reuse
+    int optval = 1;
+    setsockopt(server.socket, SOL_SOCKET, SO_REUSEADDR, (const void *) &optval , sizeof(int));
         
     if (listen(server.socket, MAX_NUMBER_OF_TCP_CONNECTIONS) < 0) {
         LogFatal("listen() failed");
