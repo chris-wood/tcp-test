@@ -1,0 +1,1 @@
+/usr/bin/cc    -Wall -gdwarf-4 -Wall -Werror -ggdb -fvisibility=hidden -Wshadow -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/ssl_test.dir/ssl_test.c.o  -o ssl_test  libssl.a ../crypto/libcrypto.a 

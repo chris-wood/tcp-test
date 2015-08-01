@@ -1,0 +1,16 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/caw/Projects/transport-test/src/quic/build/boringssl/crypto/aes/aes-x86_64.S
+
+/Users/caw/Projects/transport-test/src/quic/build/boringssl/crypto/aes/aesni-x86_64.S
+
+/Users/caw/Projects/transport-test/src/quic/build/boringssl/crypto/aes/bsaes-x86_64.S
+
+/Users/caw/Projects/transport-test/src/quic/build/boringssl/crypto/aes/vpaes-x86_64.S
+

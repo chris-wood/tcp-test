@@ -1,0 +1,1 @@
+/usr/bin/cc    -Wall -gdwarf-4 -Wall -Werror -ggdb -fvisibility=hidden -Wshadow -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/tab_test.dir/tabtest.c.o  -o tab_test  ../libcrypto.a 
