@@ -1,1 +1,0 @@
-/usr/bin/cc    -Wall -gdwarf-4 -Wall -Werror -ggdb -fvisibility=hidden -Wshadow -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/err_test.dir/err_test.c.o  -o err_test  ../libcrypto.a 

@@ -1,1 +1,0 @@
-/usr/bin/cc    -Wall -gdwarf-4 -Wall -Werror -ggdb -fvisibility=hidden -Wshadow -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/pkcs12_test.dir/pkcs12_test.c.o  -o pkcs12_test  ../libcrypto.a 

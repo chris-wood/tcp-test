@@ -1,9 +1,9 @@
 all:
-	gcc -o client udp-client.c ../util.c
-	gcc -o server udp-server.c ../util.c
+	gcc -o udp-client udp-client.c ../util.c
+	gcc -o udp-server udp-server.c ../util.c
 
 clean:
-	rm client server
+	rm udp-client udp-server
 
 	
 
