@@ -11,4 +11,21 @@ STCPSERVER=../sctp/sctp-server
 QUICSERVER=../quic/quic-server
 CCNSERVER=../ccn/ccn-server
 
+SERVERLIST=( $TCPCLIENT $UDPCLIENT $STCPCLIENT $QUICCLIENT $CCNCLIENT )
 
+N=10
+
+export TIMEFORMAT='%3R'
+
+for SERVER in "${SERVERLIST[@]}"
+do
+    for s in "${SIZES[@]}"
+    do
+        for i in `seq 1 $N`
+        do
+            OUTFILE=$SERVER_$i.out
+            ./create-file.sh $FILENAME $s
+            time ( $SERVER $IPADDR $PORT $FILENAME ) > $OUTFILE
+        done
+    done
+done
