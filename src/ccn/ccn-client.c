@@ -3,19 +3,17 @@
  * Copyright 2014-2015 Palo Alto Research Center, Inc. (PARC), a Xerox company.  All Rights Reserved.
  * The content of this file, whole or in part, is subject to licensing terms.
  * If distributing this software, include this License Header Notice in each
- * file and provide the accompanying LICENSE file. 
+ * file and provide the accompanying LICENSE file.
  */
 /**
  * @author Glenn Scott, Alan Walendowski, Computing Science Laboratory, PARC
  * @copyright 2014-2015 Palo Alto Research Center, Inc. (PARC), A Xerox Company. All Rights Reserved.
  */
-#include <config.h>
 #include <stdio.h>
 #include <strings.h>
 
-#include "tutorial_Common.h"
-#include "tutorial_FileIO.h"
-#include "tutorial_About.h"
+#include "common.h"
+#include "fileio.h"
 
 #include <LongBow/runtime.h>
 
@@ -27,6 +25,7 @@
 #include <ccnx/common/ccnx_Name.h>
 
 #include <parc/algol/parc_Memory.h>
+#include <parc/algol/parc_BufferComposer.h>
 
 #include <parc/security/parc_Security.h>
 #include <parc/security/parc_IdentityFile.h>
@@ -45,7 +44,7 @@ _setupConsumerPortalFactory(void)
     const char *keystorePassword = "keystore_password";
     const char *subjectName = "tutorialClient";
 
-    return tutorialCommon_SetupPortalFactory(keystoreName, keystorePassword, subjectName);
+    return common_SetupPortalFactory(keystoreName, keystorePassword, subjectName);
 }
 
 /**
@@ -64,24 +63,25 @@ static char *
 _assembleDirectoryListing(PARCBuffer *payload, uint64_t chunkNumber, uint64_t finalChunkNumber)
 {
     char *result = NULL;
-    static PARCElasticBuffer *directoryList = NULL;
+    static PARCBufferComposer *directoryList = NULL;
 
     if (directoryList == NULL) {
-        directoryList = parcElasticBuffer_Create();
+        directoryList = parcBufferComposer_Create();
     }
 
-    if (chunkNumber == 0) {
-        parcElasticBuffer_Clear(directoryList);
-    }
+    // if (chunkNumber == 0) {
+    //     parcElasticBuffer_Clear(directoryList);
+    // }
 
-    parcElasticBuffer_PutBuffer(directoryList, payload);
+    parcBufferComposer_PutBuffer(directoryList, payload);
 
     if (chunkNumber == finalChunkNumber) {
-        parcElasticBuffer_Flip(directoryList);
+        PARCBuffer *list = parcBufferComposer_ProduceBuffer(directoryList);
 
         // Since this was the last chunk, return the completed directory listing.
-        result = parcElasticBuffer_ToString(directoryList);
-        parcElasticBuffer_Release(&directoryList);
+        result = parcBuffer_ToString(list);
+        parcBufferComposer_Release(&directoryList);
+        parcBuffer_Release(&list);
     }
 
     return result;
@@ -103,13 +103,13 @@ _assembleFile(const char *fileName, const PARCBuffer *payload, uint64_t chunkNum
 {
     if (chunkNumber == 0) {
         // If we're the first chunk (chunk #0), then make sure we're starting with an empty file.
-        tutorialFileIO_DeleteFile(fileName);
+        fileio_DeleteFile(fileName);
     }
 
-    // Note that the tutorialFileIO_AppendFileChunk() function should be replaced with something that keeps
+    // Note that the fileio_AppendFileChunk() function should be replaced with something that keeps
     // an open file pointer instead of repeatedly re-opening it. This method simply opens (possibly creating)
     // the file and appends the specified payload). It is not an efficient implementation.
-    tutorialFileIO_AppendFileChunk(fileName, payload);
+    fileio_AppendFileChunk(fileName, payload);
 
     return (chunkNumber == finalChunkNumber); // true, if we just wrote the final chunk
 }
@@ -185,23 +185,23 @@ _receiveContentObject(CCNxContentObject *contentObject, const CCNxName *domainPr
 {
     CCNxName *contentName = ccnxContentObject_GetName(contentObject);
 
-    uint64_t chunkNumber = tutorialCommon_GetChunkNumberFromName(contentName);
+    uint64_t chunkNumber = common_GetChunkNumberFromName(contentName);
 
     // Get the number of the final chunk, as specified by the sender.
     uint64_t finalChunkNumberSpecifiedByServer = ccnxContentObject_GetFinalChunkNumber(contentObject);
 
     // Get the type of the incoming message. Was it a response to a fetch' or a 'list' command?
-    char *command = tutorialCommon_CreateCommandStringFromName(contentName, domainPrefix);
+    char *command = common_CreateCommandStringFromName(contentName, domainPrefix);
 
     // Process the payload.
     PARCBuffer *payload = ccnxContentObject_GetPayload(contentObject);
 
-    if (strncasecmp(command, tutorialCommon_CommandList, strlen(command)) == 0) {
+    if (strncasecmp(command, common_CommandList, strlen(command)) == 0) {
         // This is a chunk of the directory listing.
         _receiveDirectoryListingChunk(payload, chunkNumber, finalChunkNumberSpecifiedByServer);
-    } else if (strncasecmp(command, tutorialCommon_CommandFetch, strlen(command)) == 0) {
+    } else if (strncasecmp(command, common_CommandFetch, strlen(command)) == 0) {
         // This is a chunk of a file.
-        char *fileName = tutorialCommon_CreateFileNameFromName(contentName);
+        char *fileName = common_CreateFileNameFromName(contentName);
         _receiveFileChunk(fileName, payload, chunkNumber, finalChunkNumberSpecifiedByServer);
         parcMemory_Deallocate((void **) &fileName);
     } else {
@@ -226,7 +226,7 @@ _receiveContentObject(CCNxContentObject *contentObject, const CCNxName *domainPr
 static CCNxInterest *
 _createInterest(const char *command, const char *targetName)
 {
-    CCNxName *interestName = ccnxName_CreateFromURI(tutorialCommon_DomainPrefix); // Start with the prefix. We append to this.
+    CCNxName *interestName = ccnxName_CreateFromURI(common_DomainPrefix); // Start with the prefix. We append to this.
 
     // Create a NameSegment for our command, which we will append after the prefix we just created.
     PARCBuffer *commandBuffer = parcBuffer_WrapCString((char *) command);
@@ -243,7 +243,7 @@ _createInterest(const char *command, const char *targetName)
         PARCBuffer *targetBuf = parcBuffer_WrapCString((char *) targetName);
         CCNxNameSegment *targetSegment = ccnxNameSegment_CreateTypeValue(CCNxNameLabelType_NAME, targetBuf);
         parcBuffer_Release(&targetBuf);
-        
+
 
         // Append it to the ccnxName.
         ccnxName_Append(interestName, targetSegment);
@@ -318,7 +318,7 @@ _executeUserCommand(const char *command, const char *targetName)
     // Send the Interest through the Portal, and wait for a response.
     CCNxMetaMessage *message = ccnxMetaMessage_CreateFromInterest(interest);
     if (ccnxPortal_Send(portal, message)) {
-        CCNxName *domainPrefix = ccnxName_CreateFromURI(tutorialCommon_DomainPrefix);  // e.g. 'lci:/ccnx/tutorial'
+        CCNxName *domainPrefix = ccnxName_CreateFromURI(common_DomainPrefix);  // e.g. 'lci:/ccnx/tutorial'
 
         result = _receiveResponseToIssuedInterest(portal, domainPrefix);
 
@@ -341,7 +341,7 @@ _executeUserCommand(const char *command, const char *targetName)
 static void
 _displayUsage(char *programName)
 {
-    printf("\n%s\n%s, %s\n\n", tutorialAbout_Version(), tutorialAbout_Name(), programName);
+    printf("\n%s\n", programName);
 
     printf(" This example application can retrieve a specified file or the list of available files from\n");
     printf(" the tutorialServer application, which should be running when this application is used. A CCNx\n");
@@ -364,7 +364,7 @@ main(int argc, char *argv[argc])
     bool needToShowUsage = false;
     bool shouldExit = false;
 
-    status = tutorialCommon_processCommandLineArguments(argc, argv, &commandArgCount, commandArgs, &needToShowUsage, &shouldExit);
+    status = common_processCommandLineArguments(argc, argv, &commandArgCount, commandArgs, &needToShowUsage, &shouldExit);
 
     if (needToShowUsage) {
         _displayUsage(argv[0]);
@@ -375,10 +375,10 @@ main(int argc, char *argv[argc])
     }
 
     if (commandArgCount == 2
-        && (strncmp(tutorialCommon_CommandFetch, commandArgs[0], strlen(commandArgs[0])) == 0)) {        // "fetch <filename>"
+        && (strncmp(common_CommandFetch, commandArgs[0], strlen(commandArgs[0])) == 0)) {        // "fetch <filename>"
         status = _executeUserCommand(commandArgs[0], commandArgs[1]) ? EXIT_SUCCESS : EXIT_FAILURE;
     } else if (commandArgCount == 1
-               && (strncmp(tutorialCommon_CommandList, commandArgs[0], strlen(commandArgs[0])) == 0)) {  // "list"
+               && (strncmp(common_CommandList, commandArgs[0], strlen(commandArgs[0])) == 0)) {  // "list"
         status = _executeUserCommand(commandArgs[0], NULL) ? EXIT_SUCCESS : EXIT_FAILURE;
     } else {
         status = EXIT_FAILURE;

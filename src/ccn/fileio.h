@@ -3,18 +3,17 @@
  * Copyright 2014-2015 Palo Alto Research Center, Inc. (PARC), a Xerox company.  All Rights Reserved.
  * The content of this file, whole or in part, is subject to licensing terms.
  * If distributing this software, include this License Header Notice in each
- * file and provide the accompanying LICENSE file. 
+ * file and provide the accompanying LICENSE file.
  */
 /**
  * @author Alan Walendowski, Computing Science Laboratory, PARC
  * @copyright 2014-2015 Palo Alto Research Center, Inc. (PARC), A Xerox Company. All Rights Reserved.
  */
 
-#ifndef tutorial_FileIO_h
-#define tutorial_FileIO_h
+#ifndef fileio_h
+#define fileio_h
 
 #include <parc/algol/parc_Buffer.h>
-#include <parc/algol/parc_ElasticBuffer.h>
 
 /**
  * Given a fileName and chunk number, retrieve that chunk from the specified file. The
@@ -27,7 +26,7 @@
  *
  * @return A newly created PARCBuffer containing the contents of the specified chunk.
  */
-PARCBuffer *tutorialFileIO_GetFileChunk(const char *fileName, size_t chunkSize, uint64_t chunkNumber);
+PARCBuffer *fileio_GetFileChunk(const char *fileName, size_t chunkSize, uint64_t chunkNumber);
 
 /**
  * Given a PARCBuffer, append its contents to the file specified by the given fileName.
@@ -37,7 +36,7 @@ PARCBuffer *tutorialFileIO_GetFileChunk(const char *fileName, size_t chunkSize, 
  *
  * @return The number of bytes written to the file.
  */
-size_t tutorialFileIO_AppendFileChunk(const char *fileName, const PARCBuffer *chunk);
+size_t fileio_AppendFileChunk(const char *fileName, const PARCBuffer *chunk);
 
 /**
  * Check if a file exists and is readable.
@@ -48,7 +47,7 @@ size_t tutorialFileIO_AppendFileChunk(const char *fileName, const PARCBuffer *ch
  * @return true If the file exists and is readable.
  * @return false If the file doesn't exist or is not readable.
  */
-bool tutorialFileIO_IsFileAvailable(const char *fileName);
+bool fileio_IsFileAvailable(const char *fileName);
 
 /**
  * Return the size, in bytes, of the specified file.
@@ -57,7 +56,7 @@ bool tutorialFileIO_IsFileAvailable(const char *fileName);
  *
  * @return The size of the file, in bytes.
  */
-size_t tutorialFileIO_GetFileSize(const char *fileName);
+size_t fileio_GetFileSize(const char *fileName);
 
 /**
  * Delete the file specified.
@@ -67,7 +66,7 @@ size_t tutorialFileIO_GetFileSize(const char *fileName);
  * @return true If the file was successfully deleted.
  * @return false If the file was not deleted.
  */
-bool tutorialFileIO_DeleteFile(const char *fileName);
+bool fileio_DeleteFile(const char *fileName);
 
 /**
  * Return a PARCBuffer containing a string representing the list of files and their sizes in the directory
@@ -78,5 +77,5 @@ bool tutorialFileIO_DeleteFile(const char *fileName);
  *
  * @param dirName A pointer to a string containing the name of the directory to inspect.
  */
-PARCBuffer *tutorialFileIO_CreateDirectoryListing(const char *dirName);
-#endif // tutorial_FileIO_h
+PARCBuffer *fileio_CreateDirectoryListing(const char *dirName);
+#endif // fileio_h

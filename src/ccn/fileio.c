@@ -3,13 +3,12 @@
  * Copyright 2014-2015 Palo Alto Research Center, Inc. (PARC), a Xerox company.  All Rights Reserved.
  * The content of this file, whole or in part, is subject to licensing terms.
  * If distributing this software, include this License Header Notice in each
- * file and provide the accompanying LICENSE file. 
+ * file and provide the accompanying LICENSE file.
  */
 /**
  * @author Alan Walendowski, Computing Science Laboratory, PARC
  * @copyright 2014-2015 Palo Alto Research Center, Inc. (PARC), A Xerox Company. All Rights Reserved.
  */
-#include <config.h>
 #include <stdio.h>
 #include <dirent.h>
 #include <unistd.h>
@@ -18,11 +17,11 @@
 #include <parc/algol/parc_Memory.h>
 #include <parc/algol/parc_BufferComposer.h>
 
-#include "tutorial_FileIO.h"
-#include "tutorial_Common.h"
+#include "fileio.h"
+#include "common.h"
 
 PARCBuffer *
-tutorialFileIO_GetFileChunk(const char *fileName, size_t chunkSize, uint64_t chunkNum)
+fileio_GetFileChunk(const char *fileName, size_t chunkSize, uint64_t chunkNum)
 {
     FILE *file = fopen(fileName, "r");
 
@@ -60,7 +59,7 @@ tutorialFileIO_GetFileChunk(const char *fileName, size_t chunkSize, uint64_t chu
 }
 
 size_t
-tutorialFileIO_AppendFileChunk(const char *fileName, const PARCBuffer *chunk)
+fileio_AppendFileChunk(const char *fileName, const PARCBuffer *chunk)
 {
     size_t numBytesWritten = 0;
 
@@ -81,13 +80,13 @@ tutorialFileIO_AppendFileChunk(const char *fileName, const PARCBuffer *chunk)
 }
 
 bool
-tutorialFileIO_IsFileAvailable(const char *filePath)
+fileio_IsFileAvailable(const char *filePath)
 {
     return (access(filePath, F_OK | R_OK) == 0);
 }
 
 size_t
-tutorialFileIO_GetFileSize(const char *filePath)
+fileio_GetFileSize(const char *filePath)
 {
     size_t fileSize = 0;
 
@@ -104,7 +103,7 @@ tutorialFileIO_GetFileSize(const char *filePath)
 }
 
 PARCBuffer *
-tutorialFileIO_CreateDirectoryListing(const char *directoryName)
+fileio_CreateDirectoryListing(const char *directoryName)
 {
     DIR *directory = opendir(directoryName);
 
@@ -126,9 +125,9 @@ tutorialFileIO_CreateDirectoryListing(const char *directoryName)
                 char *fullFilePathString = parcBuffer_ToString(fileNameBuffer);
                 parcBuffer_Release(&fileNameBuffer);
 
-                if (tutorialFileIO_IsFileAvailable(fullFilePathString)) {
+                if (fileio_IsFileAvailable(fullFilePathString)) {
                     parcBufferComposer_Format(directoryListing, "  %s  (%zu bytes)\n",
-                                              entry->d_name, tutorialFileIO_GetFileSize(fullFilePathString));
+                                              entry->d_name, fileio_GetFileSize(fullFilePathString));
                 }
 
                 parcBufferComposer_Release(&fullFilePath);
@@ -154,7 +153,7 @@ tutorialFileIO_CreateDirectoryListing(const char *directoryName)
 }
 
 bool
-tutorialFileIO_DeleteFile(const char *fileName)
+fileio_DeleteFile(const char *fileName)
 {
     // Unlink the file. Return true if succesful, false if not.
     // False could mean the file didn't originally exist.

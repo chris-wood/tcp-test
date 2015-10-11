@@ -3,19 +3,17 @@
  * Copyright 2014-2015 Palo Alto Research Center, Inc. (PARC), a Xerox company.  All Rights Reserved.
  * The content of this file, whole or in part, is subject to licensing terms.
  * If distributing this software, include this License Header Notice in each
- * file and provide the accompanying LICENSE file. 
+ * file and provide the accompanying LICENSE file.
  */
 /**
  * @author Glenn Scott, Alan Walendowski, Computing Science Laboratory, PARC
  * @copyright 2014-2015 Palo Alto Research Center, Inc. (PARC), A Xerox Company. All Rights Reserved.
  */
 
-#include <config.h>
 #include <strings.h>
 
-#include "tutorial_Common.h"
-#include "tutorial_FileIO.h"
-#include "tutorial_About.h"
+#include "common.h"
+#include "fileio.h"
 
 #include <LongBow/runtime.h>
 
@@ -41,7 +39,7 @@ _setupServerPortalFactory(void)
     const char *keystorePassword = "keystore_password";
     const char *subjectName = "tutorialServer";
 
-    return tutorialCommon_SetupPortalFactory(keystoreName, keystorePassword, subjectName);
+    return common_SetupPortalFactory(keystoreName, keystorePassword, subjectName);
 }
 
 /**
@@ -73,7 +71,7 @@ _getNumberOfChunksRequired(uint64_t dataLength, uint32_t chunkSize)
 static u_int64_t
 _getFinalChunkNumberOfFile(const char *filePath, uint32_t chunkSize)
 {
-    size_t fileSize = tutorialFileIO_GetFileSize(filePath);
+    size_t fileSize = fileio_GetFileSize(filePath);
     uint64_t totalNumberOfChunksInFile = _getNumberOfChunksRequired(fileSize, chunkSize);
 
     // If the file size == 0, the the final chunk number is 0. Else, it's one less
@@ -134,14 +132,14 @@ _createFetchResponse(const CCNxName *name, const char *directoryPath, const char
     snprintf(fullFilePath, filePathBufferSize, "%s/%s", directoryPath, fileName);
 
     // Make sure the file exists and is accessible before creating a ContentObject response.
-    if (tutorialFileIO_IsFileAvailable(fullFilePath)) {
+    if (fileio_IsFileAvailable(fullFilePath)) {
         // Since the file's length can change (e.g. if it is being written to while we're fetching
         // it), the final chunk number can change between requests for content chunks. So, update
         // it each time this function is called.
-        finalChunkNumber = _getFinalChunkNumberOfFile(fullFilePath, tutorialCommon_ChunkSize);
+        finalChunkNumber = _getFinalChunkNumberOfFile(fullFilePath, common_ChunkSize);
 
         // Get the actual contents of the specified chunk of the file.
-        PARCBuffer *payload = tutorialFileIO_GetFileChunk(fullFilePath, tutorialCommon_ChunkSize, requestedChunkNumber);
+        PARCBuffer *payload = fileio_GetFileChunk(fullFilePath, common_ChunkSize, requestedChunkNumber);
 
         if (payload != NULL) {
             result = _createContentObject(name, payload, finalChunkNumber);
@@ -170,19 +168,19 @@ _createListResponse(CCNxName *name, const char *directoryPath, uint64_t requeste
 {
     CCNxContentObject *result = NULL;
 
-    PARCBuffer *directoryList = tutorialFileIO_CreateDirectoryListing(directoryPath);
+    PARCBuffer *directoryList = fileio_CreateDirectoryListing(directoryPath);
 
-    uint64_t totalChunksInDirList = _getNumberOfChunksRequired(parcBuffer_Limit(directoryList), tutorialCommon_ChunkSize);
+    uint64_t totalChunksInDirList = _getNumberOfChunksRequired(parcBuffer_Limit(directoryList), common_ChunkSize);
     if (requestedChunkNumber < totalChunksInDirList) {
         // Set the buffer's position to the start of the desired chunk.
-        parcBuffer_SetPosition(directoryList, (requestedChunkNumber * tutorialCommon_ChunkSize));
+        parcBuffer_SetPosition(directoryList, (requestedChunkNumber * common_ChunkSize));
 
         // See if we have more than 1 chunk's worth of data to in the buffer. If so, set the buffer's limit
         // to the end of the chunk.
         size_t chunkLen = parcBuffer_Remaining(directoryList);
 
-        if (chunkLen > tutorialCommon_ChunkSize) {
-            parcBuffer_SetLimit(directoryList, parcBuffer_Position(directoryList) + tutorialCommon_ChunkSize);
+        if (chunkLen > common_ChunkSize) {
+            parcBuffer_SetLimit(directoryList, parcBuffer_Position(directoryList) + common_ChunkSize);
         }
 
         printf("tutorialServer: Responding to 'list' command with chunk %ld/%ld\n", (unsigned long) requestedChunkNumber, (unsigned long) totalChunksInDirList);
@@ -217,9 +215,9 @@ _createInterestResponse(const CCNxInterest *interest, const CCNxName *domainPref
 {
     CCNxName *interestName = ccnxInterest_GetName(interest);
 
-    char *command = tutorialCommon_CreateCommandStringFromName(interestName, domainPrefix);
+    char *command = common_CreateCommandStringFromName(interestName, domainPrefix);
 
-    uint64_t requestedChunkNumber = tutorialCommon_GetChunkNumberFromName(interestName);
+    uint64_t requestedChunkNumber = common_GetChunkNumberFromName(interestName);
 
     char *interestNameString = ccnxName_ToString(interestName);
     printf("tutorialServer: received Interest for chunk %d of %s, command = %s\n",
@@ -227,12 +225,12 @@ _createInterestResponse(const CCNxInterest *interest, const CCNxName *domainPref
     parcMemory_Deallocate((void **) &interestNameString);
 
     CCNxContentObject *result = NULL;
-    if (strncasecmp(command, tutorialCommon_CommandList, strlen(command)) == 0) {
+    if (strncasecmp(command, common_CommandList, strlen(command)) == 0) {
         // This was a 'list' command. We should return the requested chunk of the directory listing.
         result = _createListResponse(interestName, directoryPath, requestedChunkNumber);
-    } else if (strncasecmp(command, tutorialCommon_CommandFetch, strlen(command)) == 0) {
+    } else if (strncasecmp(command, common_CommandFetch, strlen(command)) == 0) {
         // This was a 'fetch' command. We should return the requested chunk of the file specified.
-        char *fileName = tutorialCommon_CreateFileNameFromName(interestName);
+        char *fileName = common_CreateFileNameFromName(interestName);
         result = _createFetchResponse(interestName, directoryPath, fileName, requestedChunkNumber);
         parcMemory_Deallocate((void **) &fileName);
     }
@@ -307,7 +305,7 @@ _serveDirectory(const char *directoryPath)
 
     assertNotNull(portal, "Expected a non-null CCNxPortal pointer. Is the Forwarder running?");
 
-    CCNxName *domainPrefix = ccnxName_CreateFromURI(tutorialCommon_DomainPrefix);
+    CCNxName *domainPrefix = ccnxName_CreateFromURI(common_DomainPrefix);
 
     if (ccnxPortal_Listen(portal, domainPrefix)) {
         printf("tutorial_Server: now serving files from %s\n", directoryPath);
@@ -328,7 +326,7 @@ _serveDirectory(const char *directoryPath)
 static void
 _displayUsage(char *programName)
 {
-    printf("\n%s\n%s, %s\n\n", tutorialAbout_Version(), tutorialAbout_Name(), programName);
+    printf("\n%s\n", programName);
 
     printf(" This example file server application can provide access to files in the specified directory.\n");
     printf(" A CCNx forwarder (e.g. Metis) must be running before running it. Once running, the peer\n");
@@ -350,7 +348,7 @@ main(int argc, char *argv[argc])
     bool needToShowUsage = false;
     bool shouldExit = false;
 
-    status = tutorialCommon_processCommandLineArguments(argc, argv, &commandArgCount, commandArgs, &needToShowUsage, &shouldExit);
+    status = common_processCommandLineArguments(argc, argv, &commandArgCount, commandArgs, &needToShowUsage, &shouldExit);
 
     if (needToShowUsage) {
         _displayUsage(argv[0]);

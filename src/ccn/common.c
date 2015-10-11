@@ -3,16 +3,14 @@
  * Copyright 2014-2015 Palo Alto Research Center, Inc. (PARC), a Xerox company.  All Rights Reserved.
  * The content of this file, whole or in part, is subject to licensing terms.
  * If distributing this software, include this License Header Notice in each
- * file and provide the accompanying LICENSE file. 
+ * file and provide the accompanying LICENSE file.
  */
 /**
  * @author Alan Walendowski, Computing Science Laboratory, PARC
  * @copyright 2014-2015 Palo Alto Research Center, Inc. (PARC), A Xerox Company. All Rights Reserved.
  */
-#include <config.h>
 
-#include "tutorial_Common.h"
-#include "tutorial_About.h"
+#include "common.h"
 
 #include <LongBow/runtime.h>
 
@@ -25,26 +23,26 @@
 /**
  * The CCNx Name prefix we'll use for the tutorial.
  */
-const char *tutorialCommon_DomainPrefix = "lci:/ccnx/tutorial";
+const char *common_DomainPrefix = "lci:/ccnx/tutorial";
 
 /**
  * The size of a chunk. We break CCNx Content payloads up into pieces of this size.
  * 1200 was chosen as a size that should prevent IP fragmentation of CCNx ContentObject Messages.
  */
-const uint32_t tutorialCommon_ChunkSize = 1200;
+const uint32_t common_ChunkSize = 1200;
 
 /**
  * The string we use for the 'fetch' command.
  */
-const char *tutorialCommon_CommandFetch = "fetch";
+const char *common_CommandFetch = "fetch";
 
 /**
  * The string we use for the 'list' command.
  */
-const char *tutorialCommon_CommandList = "list";
+const char *common_CommandList = "list";
 
 PARCIdentity *
-tutorialCommon_CreateAndGetIdentity(const char *keystoreName, const char *keystorePassword, const char *subjectName)
+common_CreateAndGetIdentity(const char *keystoreName, const char *keystorePassword, const char *subjectName)
 {
     parcSecurity_Init();
 
@@ -66,9 +64,9 @@ tutorialCommon_CreateAndGetIdentity(const char *keystoreName, const char *keysto
 }
 
 CCNxPortalFactory *
-tutorialCommon_SetupPortalFactory(const char *keystoreName, const char *keystorePassword, const char *subjectName)
+common_SetupPortalFactory(const char *keystoreName, const char *keystorePassword, const char *subjectName)
 {
-    PARCIdentity *identity = tutorialCommon_CreateAndGetIdentity(keystoreName, keystorePassword, subjectName);
+    PARCIdentity *identity = common_CreateAndGetIdentity(keystoreName, keystorePassword, subjectName);
     CCNxPortalFactory *result = ccnxPortalFactory_Create(identity);
     parcIdentity_Release(&identity);
 
@@ -76,7 +74,7 @@ tutorialCommon_SetupPortalFactory(const char *keystoreName, const char *keystore
 }
 
 uint64_t
-tutorialCommon_GetChunkNumberFromName(const CCNxName *name)
+common_GetChunkNumberFromName(const CCNxName *name)
 {
     size_t numberOfSegmentsInName = ccnxName_GetSegmentCount(name);
     CCNxNameSegment *chunkNumberSegment = ccnxName_GetSegment(name, numberOfSegmentsInName - 1);
@@ -92,7 +90,7 @@ tutorialCommon_GetChunkNumberFromName(const CCNxName *name)
 }
 
 char *
-tutorialCommon_CreateFileNameFromName(const CCNxName *name)
+common_CreateFileNameFromName(const CCNxName *name)
 {
     // For the Tutorial, the second to last NameSegment is the filename.
     CCNxNameSegment *fileNameSegment = ccnxName_GetSegment(name, ccnxName_GetSegmentCount(name) - 2); // '-2' because we want the second to last segment
@@ -108,7 +106,7 @@ tutorialCommon_CreateFileNameFromName(const CCNxName *name)
 }
 
 char *
-tutorialCommon_CreateCommandStringFromName(const CCNxName *name, const CCNxName *domainPrefix)
+common_CreateCommandStringFromName(const CCNxName *name, const CCNxName *domainPrefix)
 {
     // For the Tutorial, the NameSegment immediately following the domain prefix contains the command.
     CCNxNameSegment *commandSegment = ccnxName_GetSegment(name, ccnxName_GetSegmentCount(domainPrefix));
@@ -124,7 +122,7 @@ tutorialCommon_CreateCommandStringFromName(const CCNxName *name, const CCNxName 
 }
 
 int
-tutorialCommon_processCommandLineArguments(int argc, char **argv,
+common_processCommandLineArguments(int argc, char **argv,
                                            int *commandArgCount, char **commandArgs,
                                            bool *needToShowUsage, bool *shouldExit)
 {
@@ -142,7 +140,7 @@ tutorialCommon_processCommandLineArguments(int argc, char **argv,
                     break;
                 }
                 case 'v': {
-                    printf("%s version: %s\n", argv[0], tutorialAbout_Version());
+                    printf("%s\n", argv[0]);
                     *shouldExit = true;
                     break;
                 }
