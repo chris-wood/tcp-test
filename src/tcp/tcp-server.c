@@ -1,11 +1,11 @@
-#include <stdio.h> 
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#include "../util.h"
+#include "../util/util.h"
 
 typedef struct {
     int socket;
@@ -22,7 +22,7 @@ typedef struct {
     unsigned int length;
 } TCPClient;
 
-void 
+void
 TCPServer_ServeClient(TCPServer *server, TCPClient *client)
 {
     char *nameBuffer = (char *) malloc(RCVBUFSIZE * sizeof(char));
@@ -83,7 +83,7 @@ TCPServer_ServeClient(TCPServer *server, TCPClient *client)
     free(nameBuffer);
 }
 
-int 
+int
 main(int argc, char *argv[])
 {
     TCPServer server;
@@ -101,7 +101,7 @@ main(int argc, char *argv[])
     if ((server.socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
         LogFatal("socket() failed");
     }
-      
+
     memset(&(server.address), 0, sizeof(server.address));
     server.address.sin_family = AF_INET;
     server.address.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -114,7 +114,7 @@ main(int argc, char *argv[])
     // set address reuse
     int optval = 1;
     setsockopt(server.socket, SOL_SOCKET, SO_REUSEADDR, (const void *) &optval , sizeof(int));
-        
+
     if (listen(server.socket, MAX_NUMBER_OF_TCP_CONNECTIONS) < 0) {
         LogFatal("listen() failed");
     }
@@ -125,7 +125,7 @@ main(int argc, char *argv[])
 
         if ((client.socket = accept(server.socket, (struct sockaddr *) &(client.address), &client.length)) < 0) {
             LogFatal("accept() failed");
-        }   
+        }
 
 #if DEBUG
         fprintf(stderr, "Handling client %s\n", inet_ntoa(client.address.sin_addr));
@@ -139,6 +139,6 @@ main(int argc, char *argv[])
     }
 
     free(server.directory);
-    
+
     return 0;
 }
