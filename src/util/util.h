@@ -4,6 +4,8 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
+#include <time.h>
+
 #define RCVBUFSIZE 128
 
 #define FILE_BUFFER_LENGTH 256
@@ -15,7 +17,18 @@
 
 #define DEBUG 1
 
+typedef struct timeval TimeValue;
+
 void LogFatal(char *errorMessage);
 
-#endif // UTIL_H_
+#define TimeBlock(_out, _block) \
+    struct timeval start; \
+    struct timeval end; \
+    struct timeval delta; \
+    gettimeofday(&start, NULL); \
+    _block \
+    gettimeofday(&end, NUL); \
+    timeval_subtract(&diff, &start, &end); \
+    fprintf(_out, (diff.tv_sec * 1000000L) + diff.tv_usec);
 
+#endif // UTIL_H_

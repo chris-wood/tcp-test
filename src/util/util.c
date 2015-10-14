@@ -1,6 +1,6 @@
 #include "util.h"
 
-void 
+void
 LogFatal(char *errorMessage)
 {
 	perror(errorMessage);
