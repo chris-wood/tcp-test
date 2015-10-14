@@ -23,7 +23,7 @@
 /**
  * The CCNx Name prefix we'll use for the tutorial.
  */
-const char *common_DomainPrefix = "lci:/ccnx/tutorial";
+const char *common_DomainPrefix = "lci:/test";
 
 /**
  * The size of a chunk. We break CCNx Content payloads up into pieces of this size.
