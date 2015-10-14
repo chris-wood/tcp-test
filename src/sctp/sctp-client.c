@@ -8,11 +8,11 @@
 #include <netinet/sctp.h> // will not compile on OSX -- not present
 #include <arpa/inet.h>
 
-#include "../util.h"
+#include "../util/util.h"
 
 #define MAX_BUFFER 1024
- 
-int 
+
+int
 main(int argc, char *argv[])
 {
     int connSock, in, ret, flags, bytesReceived, totalBytesRcvd;
@@ -24,46 +24,48 @@ main(int argc, char *argv[])
         fprintf(stderr, "usage: %s <Server IP Address> <File Name> <Port>\n", argv[0]);
         exit(1);
     }
- 
+
     char *serverIPAddress = argv[1];
     char *fileName = argv[2];
-    int serverPort = atoi(argv[3]); 
- 
-    connSock = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
- 
-    if (connSock == -1) {
-        LogFatal("socket() failed");
-    }
- 
-    bzero((void *)&servaddr, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(serverPort);
-    servaddr.sin_addr.s_addr = inet_addr(serverIPAddress);
- 
-    ret = connect(connSock, (struct sockaddr *) &servaddr, sizeof(servaddr));
-    if (ret < 0) {
-        LogFatal("connect() failed");
-    }
-    
-    ret = sctp_sendmsg(connSock, (void *)fileName, (size_t)strlen(fileName), NULL, 0, 0, 0, 0, 0, 0);
-    if (ret < 0) {
-        LogFatal("sctp_sendmsg() failed");
-    }
+    int serverPort = atoi(argv[3]);
 
-    char serverRepsonseBuffer[RCVBUFSIZE];
-    for (;;) {
-        bytesReceived = sctp_recvmsg(connSock, serverRepsonseBuffer, RCVBUFSIZE, 
-          (struct sockaddr *) NULL, 0, &sndrcvinfo, &flags);
-        totalBytesRcvd += bytesReceived;
+    TimeBlock(stdout, {
+        connSock = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
 
-        printf("%.*s", bytesReceived, serverRepsonseBuffer);
-
-        if (bytesReceived < RCVBUFSIZE) {
-            break;
+        if (connSock == -1) {
+            LogFatal("socket() failed");
         }
-    }
 
-    close(connSock);
- 
+        bzero((void *)&servaddr, sizeof(servaddr));
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_port = htons(serverPort);
+        servaddr.sin_addr.s_addr = inet_addr(serverIPAddress);
+
+        ret = connect(connSock, (struct sockaddr *) &servaddr, sizeof(servaddr));
+        if (ret < 0) {
+            LogFatal("connect() failed");
+        }
+
+        ret = sctp_sendmsg(connSock, (void *)fileName, (size_t)strlen(fileName), NULL, 0, 0, 0, 0, 0, 0);
+        if (ret < 0) {
+            LogFatal("sctp_sendmsg() failed");
+        }
+
+        char serverRepsonseBuffer[RCVBUFSIZE];
+        for (;;) {
+            bytesReceived = sctp_recvmsg(connSock, serverRepsonseBuffer, RCVBUFSIZE,
+              (struct sockaddr *) NULL, 0, &sndrcvinfo, &flags);
+            totalBytesRcvd += bytesReceived;
+
+            printf("%.*s", bytesReceived, serverRepsonseBuffer);
+
+            if (bytesReceived < RCVBUFSIZE) {
+                break;
+            }
+        }
+
+        close(connSock);
+    });
+
     return 0;
 }

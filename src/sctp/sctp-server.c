@@ -8,9 +8,9 @@
 #include <netinet/in.h>
 // #include <netinet/sctp.h>
 
-#include "../util.h"
+#include "../util/util.h"
 
-int 
+int
 main(int argc, char *argv[])
 {
     int listenSock, connSock, ret, in, flags;
@@ -27,17 +27,17 @@ main(int argc, char *argv[])
     int port = atoi(argv[1]);
 
     socket = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
- 
+
     bzero((void *)&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(port);
- 
+
     ret = bind(socket, (struct sockaddr *)&servaddr, sizeof(servaddr));
     if (ret != 0) {
         LogFatal("bind() failed");
     }
- 
+
     memset(&initmsg, 0, sizeof(initmsg));
     initmsg.sinit_num_ostreams = MAX_NUMBER_OF_SCTP_OSTREAMS;
     initmsg.sinit_max_instreams = MAX_NUMBER_OF_SCTP_ISTREAMS;
@@ -47,11 +47,11 @@ main(int argc, char *argv[])
     if (ret != 0) {
         LogFatal("setsocketop() failed");
     }
- 
+
     if (listen(socket, MAX_NUMBER_OF_SCTP_OSTREAMS) < 0) {
         LogFatal("listen() failed");
     }
- 
+
     for (;;) {
         char buffer[RCVBUFSIZE + 1];
         bzero(buffer, RCVBUFSIZE + 1);
@@ -59,7 +59,7 @@ main(int argc, char *argv[])
 #if DEBUG
         fprintf(stderr, "Awaiting a new connection...\n");
 #endif
- 
+
         ret = accept(socket, (struct sockaddr *)NULL, (int *) NULL) < 0);
         if (ret < 0) {
             LogFatal("accept() failed");
@@ -69,7 +69,7 @@ main(int argc, char *argv[])
         fprintf(stderr, "New client connected.\n");
 #endif
         in = sctp_recvmsg(connSock, buffer, sizeof(buffer), (struct sockaddr *)NULL, 0, &sndrcvinfo, &flags);
-        
+
         if (in < RCVBUFSIZE) {
             buffer[recvMsgSize] = 0; // null terminator
         } else {
@@ -112,9 +112,8 @@ main(int argc, char *argv[])
             }
         }
     }
-        
+
     close(socket);
- 
+
     return 0;
 }
-

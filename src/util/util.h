@@ -4,6 +4,7 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
+#include <sys/time.h>
 #include <time.h>
 
 #define RCVBUFSIZE 128
@@ -27,8 +28,10 @@ void LogFatal(char *errorMessage);
     struct timeval delta; \
     gettimeofday(&start, NULL); \
     _block \
-    gettimeofday(&end, NUL); \
-    timeval_subtract(&diff, &start, &end); \
-    fprintf(_out, (diff.tv_sec * 1000000L) + diff.tv_usec);
+    gettimeofday(&end, NULL); \
+    timersub(&delta, &start, &end); \
+    fprintf(_out, "%lu\n", (delta.tv_sec * 1000000L) + delta.tv_usec);
+
+// timeval_subtract(&delta, &start, &end); \
 
 #endif // UTIL_H_
