@@ -3,12 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <netdb.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "../util.h"
+#include "../util/util.h"
 
 typedef struct {
 	int port;
@@ -59,7 +59,7 @@ main(int argc, char **argv)
     char buffer[RCVBUFSIZE];
     for (;;) {
     	bzero(buffer, RCVBUFSIZE);
-    	numBytesReceived = recvfrom(server.socket, buffer, RCVBUFSIZE, 0, 
+    	numBytesReceived = recvfrom(server.socket, buffer, RCVBUFSIZE, 0,
     		(struct sockaddr *) &clientAddress, &clientlen);
     	if (numBytesReceived < 0) {
     		LogFatal("recvfrom() failed");
@@ -80,7 +80,7 @@ main(int argc, char **argv)
             asprintf(&message, "File %s does not exist", buffer);
 
             int length = strlen(message);
-            if (sendto(server.socket, message, strlen(message), 0, 
+            if (sendto(server.socket, message, strlen(message), 0,
             	(struct sockaddr *) &clientAddress, clientlen) < 0) {
                 LogFatal("sendto() failed");
             }
@@ -93,7 +93,7 @@ main(int argc, char **argv)
                 fprintf(stderr, "...\n");
 #endif
                 numBytesRead = fread(fileBuffer, 1, FILE_BUFFER_LENGTH, fp);
-                if (sendto(server.socket, fileBuffer, strlen(fileBuffer), 0, 
+                if (sendto(server.socket, fileBuffer, strlen(fileBuffer), 0,
                 	(struct sockaddr *) &clientAddress, clientlen) < 0) {
                     LogFatal("Error sending data to the client\n");
                 }
@@ -106,7 +106,7 @@ main(int argc, char **argv)
     }
 
     close(server.socket);
-    
+
     free(server.directory);
 
     return 0;

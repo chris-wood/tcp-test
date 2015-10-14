@@ -2,14 +2,14 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "../util.h"
+#include "../util/util.h"
 
-int 
+int
 main(int argc, char** argv)
 {
     int socketfd;
@@ -25,40 +25,42 @@ main(int argc, char** argv)
 
     char *serverIPAddress = argv[1];
     char *fileName = argv[2];
-    int serverPort = atoi(argv[3]); 
+    int serverPort = atoi(argv[3]);
 
-    socketfd = socket(AF_INET, SOCK_DGRAM, 0);
+    TimeBlock(stdout, {
+        socketfd = socket(AF_INET, SOCK_DGRAM, 0);
 
-    bzero(&servaddr, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr(serverIPAddress);
-    servaddr.sin_port = htons(serverPort);
+        bzero(&servaddr, sizeof(servaddr));
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_addr.s_addr = inet_addr(serverIPAddress);
+        servaddr.sin_port = htons(serverPort);
 
-    int fileNameLength = strlen(fileName);
-    if (send(socketfd, fileName, fileNameLength, 0) != fileNameLength) {
-        LogFatal("send() failed");
-    }
-
-#if DEBUG
-    fprintf(stderr, "Received: \n"); 
-#endif
-
-    for (;;) {
-        bytesReceived = recv(socketfd, serverResponseBuffer, RCVBUFSIZE, 0);
-        totalBytesRcvd += bytesReceived;
-
-        printf("%.*s", bytesReceived, serverResponseBuffer);
-
-        if (bytesReceived < RCVBUFSIZE) {
-            break;
+        int fileNameLength = strlen(fileName);
+        if (send(socketfd, fileName, fileNameLength, 0) != fileNameLength) {
+            LogFatal("send() failed");
         }
-    }
 
 #if DEBUG
-    fprintf(stderr, "\n");
+        fprintf(stderr, "Received: \n");
 #endif
 
-    close(socketfd);
+        for (;;) {
+            bytesReceived = recv(socketfd, serverResponseBuffer, RCVBUFSIZE, 0);
+            totalBytesRcvd += bytesReceived;
+
+            printf("%.*s", bytesReceived, serverResponseBuffer);
+
+            if (bytesReceived < RCVBUFSIZE) {
+                break;
+            }
+        }
+
+#if DEBUG
+        fprintf(stderr, "\n");
+#endif
+
+        close(socketfd);
+    });
 
     return 0;
 }
