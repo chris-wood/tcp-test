@@ -20,13 +20,13 @@ main(int argc, char *argv[])
     int bytesReceived, totalBytesRcvd;
 
     if (argc != 4) {
-       fprintf(stderr, "usage: %s <Server IP Address> <File Name> <Port>\n", argv[0]);
+       fprintf(stderr, "usage: %s <Server IP Address> <Port> <File Name>\n", argv[0]);
        exit(1);
     }
 
     serverIPAddress = argv[1];
-    fileName = argv[2];
-    serverPort = atoi(argv[3]);
+    serverPort = atoi(argv[2]);
+    fileName = argv[3];
 
     TimeBlock(stdout, {
         if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
@@ -57,7 +57,7 @@ main(int argc, char *argv[])
             bytesReceived = recv(sock, serverResponseBuffer, RCVBUFSIZE, 0);
             totalBytesRcvd += bytesReceived;
 
-            printf("%.*s", bytesReceived, serverResponseBuffer);
+            // printf("%.*s", bytesReceived, serverResponseBuffer);
 
             if (bytesReceived < RCVBUFSIZE) {
                 break;

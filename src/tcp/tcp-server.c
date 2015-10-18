@@ -12,8 +12,8 @@ typedef struct {
     struct sockaddr_in address;
     unsigned short port;
 
-    int directoryLength;
-    char *directory;
+    int fileLength;
+    char *file;
 } TCPServer;
 
 typedef struct {
@@ -94,9 +94,9 @@ main(int argc, char *argv[])
     }
 
     server.port = atoi(argv[1]);
-    server.directoryLength = strlen(argv[2]);
-    server.directory = (char *) malloc(server.directoryLength * sizeof(char));
-    strncpy(server.directory, argv[2], server.directoryLength);
+    server.fileLength = strlen(argv[2]);
+    server.file = (char *) malloc(server.fileLength * sizeof(char));
+    strncpy(server.file, argv[2], server.fileLength);
 
     if ((server.socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
         LogFatal("socket() failed");
@@ -138,7 +138,7 @@ main(int argc, char *argv[])
 #endif
     }
 
-    free(server.directory);
+    free(server.file);
 
     return 0;
 }
