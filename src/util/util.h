@@ -29,7 +29,7 @@ void LogFatal(char *errorMessage);
     gettimeofday(&start, NULL); \
     _block \
     gettimeofday(&end, NULL); \
-    timersub(&delta, &start, &end); \
+    timersub(&end, &start, &delta); \
     fprintf(_out, "%lu\n", (delta.tv_sec * 1000000L) + delta.tv_usec);
 
 // timeval_subtract(&delta, &start, &end); \
