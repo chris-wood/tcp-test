@@ -1,7 +1,7 @@
 #!/bin/bash
 
-IPADDR=1.2.3.4
-PORT=9596
+IPADDR=127.0.0.1
+PORT=9001
 
 FILENAME=file.bin
 
@@ -11,7 +11,7 @@ STCPCLIENT=../sctp/sctp-client
 QUICCLIENT=../quic/quic-client
 CCNCLIENT=../ccn/ccn-client
 
-CLIENTLIST=( $TCPCLIENT $UDPCLIENT $CCNCLIENT )
+CLIENTLIST=( $TCPCLIENT )
 
 N=10
 
@@ -22,6 +22,6 @@ do
     for i in `seq 1 $N`
     do
         OUTFILE=$CLIENT_$i.out
-        time ( $CLIENT $IPADDR $PORT $FILENAME ) > $OUTFILE
+        $CLIENT $IPADDR $PORT $FILENAME > $OUTFILE
     done
 done
