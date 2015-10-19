@@ -42,15 +42,6 @@ _setupServerPortalFactory(void)
     return common_SetupPortalFactory(keystoreName, keystorePassword, subjectName);
 }
 
-/**
- * Given the size of some data and a chunk size, calculate the number of chunks that would be
- * required to contain the data.
- *
- * @param [in] dataLength The size of the data being chunked.
- * @param [in] chunkSize The size of the chunks to break the data in to.
- *
- * @return The number of chunks required to contain the specified data length.
- */
 static uint64_t
 _getNumberOfChunksRequired(uint64_t dataLength, uint32_t chunkSize)
 {
@@ -58,16 +49,6 @@ _getNumberOfChunksRequired(uint64_t dataLength, uint32_t chunkSize)
     return (chunks == 0) ? 1 : chunks;
 }
 
-/**
- * Given the full path to a file, calculate and return the number of the final chunk in the file.
- * The final chunk nunber is a function of the size of the file and the specified chunk size. It
- * is 0-based and is never negative. A file of size 0 has a final chunk number of 0.
- *
- * @param [in] filePath The full path to a file.
- * @param [in] chunkSize The size of the chunks to break the file in to.
- *
- * @return The number of the final chunk required to transfer the specified file.
- */
 static u_int64_t
 _getFinalChunkNumberOfFile(const char *filePath, uint32_t chunkSize)
 {
@@ -80,18 +61,6 @@ _getFinalChunkNumberOfFile(const char *filePath, uint32_t chunkSize)
     return totalNumberOfChunksInFile > 0 ? (totalNumberOfChunksInFile - 1) : 0;
 }
 
-/**
- * Given a Name, a payload, and the number of the last chunk, create a CCNxContentObject suitable for
- * passing to the Portal. This new CCNxContentObject must eventually be released by calling
- * ccnxContentObject_Release().
- *
- * @param name [in] The CCNxName to use when creating the new ContentObject.
- * @param payload [in] A PARCBuffer to use as the payload of the new ContentObject.
- * @param finalChunkNumber [in] The number of the final chunk that will be required to completely transfer
- *        the requested content.
- *
- * @return A newly created CCNxContentObject with the specified name, payload, and finalChunkNumber.
- */
 static CCNxContentObject *
 _createContentObject(const CCNxName *name, PARCBuffer *payload, uint64_t finalChunkNumber)
 {
@@ -103,22 +72,6 @@ _createContentObject(const CCNxName *name, PARCBuffer *payload, uint64_t finalCh
     return result;
 }
 
-/**
- * Given a CCNxName, a directory path, a file name, and a requested chunk number, return a new CCNxContentObject
- * with that CCNxName and containing the specified chunk of the file. The new CCNxContentObject will also
- * contain the number of the last chunk required to transfer the complete file. Note that the last chunk of the
- * file being retrieved is calculated each time we retrieve a chunk so the file can be growing in size as we
- * transfer it.
- * The new CCnxContentObject must eventually be released by calling ccnxContentObject_Release().
- *
- * @param [in] name The CCNxName to use when creating the new CCNxContentObject.
- * @param [in] directoryPath The directory in which to find the specified file.
- * @param [in] fileName The name of the file.
- * @param [in] requestedChunkNumber The number of the requested chunk from the file.
- *
- * @return A new CCNxContentObject instance containing the request chunk of the specified file, or NULL if
- *         the file did not exist or was otherwise unavailable.
- */
 static CCNxContentObject *
 _createFetchResponse(const CCNxName *name, const char *directoryPath, const char *fileName, uint64_t requestedChunkNumber)
 {
@@ -152,104 +105,20 @@ _createFetchResponse(const CCNxName *name, const char *directoryPath, const char
     return result; // Could be NULL if there was no payload
 }
 
-/**
- * Given a CCNxName, a directory path, and a requested chunk number, create a directory listing and return the specified
- * chunk of the directory listing as the payload of a newly created CCNxContentObject.
- * The new CCnxContentObject must eventually be released by calling ccnxContentObject_Release().
- *
- * @param [in] name The CCNxName to use when creating the new CCNxContentObject.
- * @param [in] directoryPath The directory whose contents are being listed.
- * @param [in] requestedChunkNumber The number of the requested chunk from the complete directory listing.
- *
- * @return A new CCNxContentObject instance containing the request chunk of the directory listing.
- */
-static CCNxContentObject *
-_createListResponse(CCNxName *name, const char *directoryPath, uint64_t requestedChunkNumber)
-{
-    CCNxContentObject *result = NULL;
-
-    PARCBuffer *directoryList = fileio_CreateDirectoryListing(directoryPath);
-
-    uint64_t totalChunksInDirList = _getNumberOfChunksRequired(parcBuffer_Limit(directoryList), common_ChunkSize);
-    if (requestedChunkNumber < totalChunksInDirList) {
-        // Set the buffer's position to the start of the desired chunk.
-        parcBuffer_SetPosition(directoryList, (requestedChunkNumber * common_ChunkSize));
-
-        // See if we have more than 1 chunk's worth of data to in the buffer. If so, set the buffer's limit
-        // to the end of the chunk.
-        size_t chunkLen = parcBuffer_Remaining(directoryList);
-
-        if (chunkLen > common_ChunkSize) {
-            parcBuffer_SetLimit(directoryList, parcBuffer_Position(directoryList) + common_ChunkSize);
-        }
-
-        printf("tutorialServer: Responding to 'list' command with chunk %ld/%ld\n", (unsigned long) requestedChunkNumber, (unsigned long) totalChunksInDirList);
-
-        // Calculate the final chunk number
-        uint64_t finalChunkNumber = (totalChunksInDirList > 0) ? totalChunksInDirList - 1 : 0; // the final chunk, 0-based
-
-        // At this point, dirListBuf has its position and limit set to the beginning and end of the
-        // specified chunk.
-        result = _createContentObject(name, directoryList, finalChunkNumber);
-    }
-
-    parcBuffer_Release(&directoryList);
-
-    return result;
-}
-
-/**
- * Given a CCnxInterest that matched our domain prefix, see what the embedded command is and
- * create a corresponding CCNxContentObject as a response. The resulting CCNxContentObject
- * must eventually be released by calling ccnxContentObject_Release().
- *
- * @param [in] interest A CCNxInterest that matched the specified domain prefix.
- * @param [in] domainPrefix A CCNxName containing the domain prefix.
- * @param [in] directoryPath A string containing the path to the directory being served.
- *
- * @return A newly creatd CCNxContentObject contaning a response to the specified Interest,
- *         or NULL if the Interest couldn't be answered.
- */
 static CCNxContentObject *
 _createInterestResponse(const CCNxInterest *interest, const CCNxName *domainPrefix, const char *directoryPath)
 {
     CCNxName *interestName = ccnxInterest_GetName(interest);
 
-    char *command = common_CreateCommandStringFromName(interestName, domainPrefix);
-
     uint64_t requestedChunkNumber = common_GetChunkNumberFromName(interestName);
 
-    char *interestNameString = ccnxName_ToString(interestName);
-    printf("tutorialServer: received Interest for chunk %d of %s, command = %s\n",
-           (int) requestedChunkNumber, interestNameString, command);
-    parcMemory_Deallocate((void **) &interestNameString);
-
-    CCNxContentObject *result = NULL;
-    if (strncasecmp(command, common_CommandList, strlen(command)) == 0) {
-        // This was a 'list' command. We should return the requested chunk of the directory listing.
-        result = _createListResponse(interestName, directoryPath, requestedChunkNumber);
-    } else if (strncasecmp(command, common_CommandFetch, strlen(command)) == 0) {
-        // This was a 'fetch' command. We should return the requested chunk of the file specified.
-        char *fileName = common_CreateFileNameFromName(interestName);
-        result = _createFetchResponse(interestName, directoryPath, fileName, requestedChunkNumber);
-        parcMemory_Deallocate((void **) &fileName);
-    }
-
-    parcMemory_Deallocate((void **) &command);
+    char *fileName = common_CreateFileNameFromName(interestName);
+    CCNxContentObject *result = _createFetchResponse(interestName, directoryPath, fileName, requestedChunkNumber);
+    parcMemory_Deallocate((void **) &fileName);
 
     return result;
 }
 
-/**
- * Listen for arriving Interests and respond to them if possible. We expect that the Portal we are passed is
- * listening for messages matching the specified domainPrefix.
- *
- * @param [in] portal The CCNxPortal that we will read from.
- * @param [in] domainPrefix A CCNxName containing the domain prefix that the specified `portal` is listening for.
- * @param [in] directoryPath A string containing the path to the directory being served.
- *
- * @return true if at least one Interest is received and responded to, false otherwise.
- */
 static bool
 _receiveAndAnswerInterests(CCNxPortal *portal, const CCNxName *domainPrefix, const char *directoryPath)
 {
@@ -285,14 +154,6 @@ _receiveAndAnswerInterests(CCNxPortal *portal, const CCNxName *domainPrefix, con
     return result;
 }
 
-/**
- * Using the CCNxPortal API, listen for and respond to Interests matching our domain prefix (as defined in tutorial_Common.c).
- * The specified directoryPath is the location of the directory from which file and listing responses will originate.
- *
- * @param [in] directoryPath A string containing the path to the directory being served.
- *
- * @return true if at least one Interest is received and responded to, false otherwise.
- */
 static bool
 _serveDirectory(const char *directoryPath)
 {
@@ -318,52 +179,19 @@ _serveDirectory(const char *directoryPath)
     return result;
 }
 
-/**
- * Display an explanation of arguments accepted by this program.
- *
- * @param [in] programName The name of this program.
- */
-static void
-_displayUsage(char *programName)
-{
-    printf("\n%s\n", programName);
-
-    printf(" This example file server application can provide access to files in the specified directory.\n");
-    printf(" A CCNx forwarder (e.g. Metis) must be running before running it. Once running, the peer\n");
-    printf(" tutorialClient application can request a listing or a specified file.\n\n");
-
-    printf("Usage: %s [-h] [-v] <directory path>\n", programName);
-    printf("  '%s ~/files' will serve the files in ~/files\n", programName);
-    printf("  '%s -v' will show the tutorial demo code version\n", programName);
-    printf("  '%s -h' will show this help\n\n", programName);
-}
-
 int
 main(int argc, char *argv[argc])
 {
     int status = EXIT_FAILURE;
 
-    char *commandArgs[argc];
-    int commandArgCount = 0;
-    bool needToShowUsage = false;
-    bool shouldExit = false;
-
-    status = common_processCommandLineArguments(argc, argv, &commandArgCount, commandArgs, &needToShowUsage, &shouldExit);
-
-    if (needToShowUsage) {
-        _displayUsage(argv[0]);
+    if (argc != 2) {
+        fprintf(stderr, "usage: %s <Directory>\n", argv[0]);
+        exit(1);
     }
 
-    if (shouldExit) {
-        exit(status);
-    }
+    char *directory = argv[1];
 
-    if (commandArgCount == 1) {
-        status = (_serveDirectory(commandArgs[0]) ? EXIT_SUCCESS : EXIT_FAILURE);
-    } else {
-        status = EXIT_FAILURE;
-        _displayUsage(argv[0]);
-    }
+    status = (_serveDirectory(directory) ? EXIT_SUCCESS : EXIT_FAILURE);
 
     exit(status);
 }

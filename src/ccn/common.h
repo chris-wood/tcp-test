@@ -21,31 +21,8 @@
 
 #include <ccnx/api/ccnx_Portal/ccnx_Portal.h>
 
-/**
- * See common.h for the initilization of these constants.
- */
-
-/**
- * The CCNx Name prefix we'll use for the tutorial.
- */
 extern const char *common_DomainPrefix;
-
-/**
- * The size of a chunk. We break CCNx Content payloads up into pieces of this size.
- * 1200 was chosen as a size that should prevent IP fragmentation of CCNx ContentObject Messages.
- */
 extern const uint32_t common_ChunkSize;
-
-/**
- * The string we use for the 'fetch' command.
- */
-extern const char *common_CommandFetch;
-
-/**
- * The string we use for the 'list' command.
- */
-extern const char *common_CommandList;
-
 
 /**
  * Creates and returns a new randomly generated Identity, which is required for signing.
@@ -94,36 +71,4 @@ uint64_t common_GetChunkNumberFromName(const CCNxName *name);
  */
 char *common_CreateFileNameFromName(const CCNxName *name);
 
-/**
- * Given a CCNxName instance, structured for this tutorial, return a string representation
- * of the command string (e.g. "fetch" or "list"). For the tutorial, this is located in the CCnxNameSegment
- * immediately following the domain prefix in the CCNxName. The string returned here must eventually be freed
- * by calling parcMemory_Deallocate().
- *
- * @param [in] name A CCNxName instance from which to extract the filename.
- * @return A C string representation of the filename encoded in the supplied CCNxName instance.
- */
-char *common_CreateCommandStringFromName(const CCNxName *name, const CCNxName *domainPrefix);
-
-/**
- * Process our command line arguments. If we're given '-h' or '-v', we handle them by displaying
- * the usage help or version, respectively. Unexpected will cause a return value of EXIT_FAILURE.
- * While processing the argument array, we also populate a list of pointers to non '-' arguments
- * and return those in the `commandArgs` parameter.
- *
- * @param [in] argc The count of command line arguments in `argv`.
- * @param [in] argv A pointer to the list of command line argument strings.
- * @param [out] commandArgCount A pointer to a int which will contain the number of non '-' arguments in `argv`.
- * @param [out] commandArgs A pointer to an array of pointers. The pointers will be set to the non '-' arguments
- *                          that were passed in in `argv`.
- * @param [out] needToShowUsage A pointer to a boolean that will be set to true if the caller should display the
- *                          usage of this application.
- * @param [out] shouldExit A pointer to a boolean that will be set to true if the caller should exit instead of
- *                         processing the commandArgs.
- *
- * @return EXIT_FAILURE if an unexpected '-' option was encountered. EXIT_SUCCESS otherwise.
- */
-int common_processCommandLineArguments(int argc, char **argv,
-                                               int *commandArgCount, char **commandArgs,
-                                               bool *needToShowUsage, bool *shouldExit);
 #endif // common.h

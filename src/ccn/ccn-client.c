@@ -31,12 +31,6 @@
 #include <parc/security/parc_IdentityFile.h>
 #include <parc/security/parc_PublicKeySignerPkcs12Store.h>
 
-/**
- * Create a new CCNxPortalFactory instance using a randomly generated identity saved to
- * the specified keystore.
- *
- * @return A new CCNxPortalFactory instance which must eventually be released by calling ccnxPortalFactory_Release().
- */
 static CCNxPortalFactory *
 _setupConsumerPortalFactory(void)
 {
@@ -47,57 +41,6 @@ _setupConsumerPortalFactory(void)
     return common_SetupPortalFactory(keystoreName, keystorePassword, subjectName);
 }
 
-/**
- * Given a sequential chunk of a 'list' response, append it to the in-memory buffer
- * that holds the listing. When the directory listing is complete, return it as a
- * string. The string must be freed by the caller.
- *
- * @param [in] payload A PARCBuffer containing the chunk of the directory listing to be appended.
- * @param [in] chunkNumber The number of the chunk that this payload belongs to.
- * @param [in] finalChunkNumber The number of the final chunk in this list response.
- *
- * @return A string containing the complete directory listing, or NULL if the complete directory
- *         listing hasn't yet been received.
- */
-static char *
-_assembleDirectoryListing(PARCBuffer *payload, uint64_t chunkNumber, uint64_t finalChunkNumber)
-{
-    char *result = NULL;
-    static PARCBufferComposer *directoryList = NULL;
-
-    if (directoryList == NULL) {
-        directoryList = parcBufferComposer_Create();
-    }
-
-    // if (chunkNumber == 0) {
-    //     parcElasticBuffer_Clear(directoryList);
-    // }
-
-    parcBufferComposer_PutBuffer(directoryList, payload);
-
-    if (chunkNumber == finalChunkNumber) {
-        PARCBuffer *list = parcBufferComposer_ProduceBuffer(directoryList);
-
-        // Since this was the last chunk, return the completed directory listing.
-        result = parcBuffer_ToString(list);
-        parcBufferComposer_Release(&directoryList);
-        parcBuffer_Release(&list);
-    }
-
-    return result;
-}
-
-/**
- * Given a sequential chunk of a 'fetch' response, append it to the file that we are assembling.
- * Return true if the final chunk has been written, false otherwise.
- *
- * @param [in] fileName The full name of the file to write the payload in to.
- * @param [in] payload A PARCBuffer containing the chunk of the file to write.
- * @param [in] chunkNumber The number of the chunk to be written.
- * @param [in] finalChunkNumber The number of the final chunk in the file.
- *
- * @return true if the entire file has been written, false otherwise.
- */
 static bool
 _assembleFile(const char *fileName, const PARCBuffer *payload, uint64_t chunkNumber, uint64_t finalChunkNumber)
 {
@@ -114,45 +57,6 @@ _assembleFile(const char *fileName, const PARCBuffer *payload, uint64_t chunkNum
     return (chunkNumber == finalChunkNumber); // true, if we just wrote the final chunk
 }
 
-/**
- * Receive a chunk of a directory listing and add it to the directory listing that we're
- * building. When it's complete, print it and return true. We assume the chunks arrive in the
- * correct order.
- *
- * @param [in] payload A PARCBuffer containing the chunk of the directory listing to write.
- * @param [in] chunkNumber The number of the chunk to be written.
- * @param [in] finalChunkNumber The number of the final chunk in the directory listing.
- *
- * @return true if the entire listing has been received, false otherwise.
- */
-static bool
-_receiveDirectoryListingChunk(PARCBuffer *payload, uint64_t chunkNumber, uint64_t finalChunkNumber)
-{
-    bool result = false;
-    char *directoryList = _assembleDirectoryListing(payload, chunkNumber, finalChunkNumber);
-
-    // When the directory listing is complete, dirListing will be non-NULL.
-    if (directoryList != NULL) {
-        printf("Directory Listing follows:\n");
-        printf("%s", directoryList);
-        parcMemory_Deallocate((void **) &directoryList);
-        result = true;
-    }
-    return result;
-}
-
-/*
- * Receive a chunk of a file and append it to the local file of the specified name. When the file is
- * complete, print a message stating so and return true. Otherwise, print a message showing the
- * file transfer progress and return false. We assume the file chunks arrive in the correct order.
- *
- * @param [in] fileName The full path to the file to be received.
- * @param [in] payload A PARCBuffer containing the chunk of the file to write.
- * @param [in] chunkNumber The number of the chunk to be written.
- * @param [in] finalChunkNumber The number of the final chunk in the directory listing.
- *
- * @return true if the entire file has been written, false otherwise.
- */
 static bool
 _receiveFileChunk(const char *fileName, const PARCBuffer *payload, uint64_t chunkNumber, uint64_t finalChunkNumber)
 {
@@ -169,17 +73,6 @@ _receiveFileChunk(const char *fileName, const PARCBuffer *payload, uint64_t chun
     return isComplete;
 }
 
-/**
- * Receive a ContentObject message that comes back from the tutorial_Server in response to an Interest we sent.
- * This message will be a chunk of the requested content, and should be received in ordered sequence.
- * Depending on the CCNxName in the content object, we hand it off to either _receiveFileChunk() or
- * _receiveDirectoryListingChunk() to process.
- *
- * @param [in] contentObject A CCNxContentObject containing a response to an CCNxInterest we sent.
- * @param [in] domainPrefix A CCNxName containing the domain prefix of the content we requested.
- *
- * @return The number of chunks of the content left to transfer.
- */
 static uint64_t
 _receiveContentObject(CCNxContentObject *contentObject, const CCNxName *domainPrefix)
 {
@@ -190,65 +83,27 @@ _receiveContentObject(CCNxContentObject *contentObject, const CCNxName *domainPr
     // Get the number of the final chunk, as specified by the sender.
     uint64_t finalChunkNumberSpecifiedByServer = ccnxContentObject_GetFinalChunkNumber(contentObject);
 
-    // Get the type of the incoming message. Was it a response to a fetch' or a 'list' command?
-    char *command = common_CreateCommandStringFromName(contentName, domainPrefix);
-
     // Process the payload.
     PARCBuffer *payload = ccnxContentObject_GetPayload(contentObject);
 
-    if (strncasecmp(command, common_CommandList, strlen(command)) == 0) {
-        // This is a chunk of the directory listing.
-        _receiveDirectoryListingChunk(payload, chunkNumber, finalChunkNumberSpecifiedByServer);
-    } else if (strncasecmp(command, common_CommandFetch, strlen(command)) == 0) {
-        // This is a chunk of a file.
-        char *fileName = common_CreateFileNameFromName(contentName);
-        _receiveFileChunk(fileName, payload, chunkNumber, finalChunkNumberSpecifiedByServer);
-        parcMemory_Deallocate((void **) &fileName);
-    } else {
-        printf("tutorial_Client: Unknown command: %s\n", command);
-    }
-
-    parcMemory_Deallocate((void **) &command);
+    char *fileName = common_CreateFileNameFromName(contentName);
+    _receiveFileChunk(fileName, payload, chunkNumber, finalChunkNumberSpecifiedByServer);
+    parcMemory_Deallocate((void **) &fileName);
 
     return (finalChunkNumberSpecifiedByServer - chunkNumber); // number of chunks left to transfer
 }
 
-/**
- * Create and return a CCNxInterest whose Name contains our commend (e.g. "fetch" or "list"),
- * and, optionally, the name of a target object (e.g. "file.txt"). The newly created CCNxInterest
- * must eventually be released by calling ccnxInterest_Release().
- *
- * @param command The command to embed in the created CCNxInterest.
- * @param targetName The name of the content, if any, that the command applies to.
- *
- * @return A newly created CCNxInterest for the specified command and targetName.
- */
 static CCNxInterest *
-_createInterest(const char *command, const char *targetName)
+_createInterest(const char *targetName)
 {
-    CCNxName *interestName = ccnxName_CreateFromURI(common_DomainPrefix); // Start with the prefix. We append to this.
+    CCNxName *interestName = ccnxName_CreateFromURI(common_DomainPrefix);
 
-    // Create a NameSegment for our command, which we will append after the prefix we just created.
-    PARCBuffer *commandBuffer = parcBuffer_WrapCString((char *) command);
-    CCNxNameSegment *commandSegment = ccnxNameSegment_CreateTypeValue(CCNxNameLabelType_NAME, commandBuffer);
-    parcBuffer_Release(&commandBuffer);
+    PARCBuffer *targetBuf = parcBuffer_WrapCString((char *) targetName);
+    CCNxNameSegment *targetSegment = ccnxNameSegment_CreateTypeValue(CCNxNameLabelType_NAME, targetBuf);
+    parcBuffer_Release(&targetBuf);
 
-    // Append the new command segment to the prefix
-    ccnxName_Append(interestName, commandSegment);
-    ccnxNameSegment_Release(&commandSegment);
-
-    // If we have a target, then create another NameSegment for it and append that.
-    if (targetName != NULL) {
-        // Create a NameSegment for our target object
-        PARCBuffer *targetBuf = parcBuffer_WrapCString((char *) targetName);
-        CCNxNameSegment *targetSegment = ccnxNameSegment_CreateTypeValue(CCNxNameLabelType_NAME, targetBuf);
-        parcBuffer_Release(&targetBuf);
-
-
-        // Append it to the ccnxName.
-        ccnxName_Append(interestName, targetSegment);
-        ccnxNameSegment_Release(&targetSegment);
-    }
+    ccnxName_Append(interestName, targetSegment);
+    ccnxNameSegment_Release(&targetSegment);
 
     CCNxInterest *result = ccnxInterest_CreateSimple(interestName);
     ccnxName_Release(&interestName);
@@ -256,15 +111,6 @@ _createInterest(const char *command, const char *targetName)
     return result;
 }
 
-/**
- * Wait for a response to a previously issued Interest. This function reads from the specified Portal
- * until the requested content is fully received. It's not very clever, as it ignores all incoming
- * portal message types except those that are CCNxContentObjects.
- *
- * @param portal An instance of CCNxPortal to read from.
- *
- * @return true If the requested content has been fully received, false otherwise.
- */
 static bool
 _receiveResponseToIssuedInterest(CCNxPortal *portal, const CCNxName *domainPrefix)
 {
@@ -292,36 +138,22 @@ _receiveResponseToIssuedInterest(CCNxPortal *portal, const CCNxName *domainPrefi
     return isTransferComplete;
 }
 
-/**
- * Given a command (e.g "fetch") and an optional target name (e.g. "file.txt"), create an appropriate CCNxInterest
- * and write it to the Portal.
- *
- * @param command The command to be handled.
- * @param targetName The name of the target content, if any, that the command applies to.
- *
- * @return true If a CCNxInterest for the specified command and optional target was successfully issued and answered.
- */
 static bool
-_executeUserCommand(const char *command, const char *targetName)
+_fetchFile(const char *targetName)
 {
     bool result = false;
     CCNxPortalFactory *factory = _setupConsumerPortalFactory();
 
-    CCNxPortal *portal =
-        ccnxPortalFactory_CreatePortal(factory, ccnxPortalRTA_Chunked, &ccnxPortalAttributes_Blocking);
+    CCNxPortal *portal = ccnxPortalFactory_CreatePortal(factory, ccnxPortalRTA_Chunked, &ccnxPortalAttributes_Blocking);
 
     assertNotNull(portal, "Expected a non-null CCNxPortal pointer.");
 
-    // Given the user's command and optional target, create an Interest.
-    CCNxInterest *interest = _createInterest(command, targetName);
+    CCNxInterest *interest = _createInterest(targetName);
 
-    // Send the Interest through the Portal, and wait for a response.
     CCNxMetaMessage *message = ccnxMetaMessage_CreateFromInterest(interest);
     if (ccnxPortal_Send(portal, message)) {
         CCNxName *domainPrefix = ccnxName_CreateFromURI(common_DomainPrefix);  // e.g. 'lci:/ccnx/tutorial'
-
         result = _receiveResponseToIssuedInterest(portal, domainPrefix);
-
         ccnxName_Release(&domainPrefix);
     }
 
@@ -333,57 +165,19 @@ _executeUserCommand(const char *command, const char *targetName)
     return result;
 }
 
-/**
- * Display an explanation of arguments accepted by this program.
- *
- * @param [in] programName The name of this program.
- */
-static void
-_displayUsage(char *programName)
-{
-    printf("\n%s\n", programName);
-
-    printf(" This example application can retrieve a specified file or the list of available files from\n");
-    printf(" the tutorialServer application, which should be running when this application is used. A CCNx\n");
-    printf(" forwarder (e.g. Metis) must also be running.\n\n");
-
-    printf("Usage: %s  [-h] [-v] [ list | fetch <filename> ]\n", programName);
-    printf("  '%s list' will list the files in the directory served by tutorial_Server\n", programName);
-    printf("  '%s fetch <filename>' will fetch the specified filename\n", programName);
-    printf("  '%s -v' will show the tutorial demo code version\n", programName);
-    printf("  '%s -h' will show this help\n\n", programName);
-}
-
 int
 main(int argc, char *argv[argc])
 {
     int status = EXIT_FAILURE;
 
-    char *commandArgs[argc];
-    int commandArgCount = 0;
-    bool needToShowUsage = false;
-    bool shouldExit = false;
-
-    status = common_processCommandLineArguments(argc, argv, &commandArgCount, commandArgs, &needToShowUsage, &shouldExit);
-
-    if (needToShowUsage) {
-        _displayUsage(argv[0]);
+    if (argc != 2) {
+        fprintf(stderr, "usage: %s <File Name>\n", argv[0]);
+        exit(1);
     }
 
-    if (shouldExit) {
-        exit(status);
-    }
+    char *fileName = argv[1];
 
-    if (commandArgCount == 2
-        && (strncmp(common_CommandFetch, commandArgs[0], strlen(commandArgs[0])) == 0)) {        // "fetch <filename>"
-        status = _executeUserCommand(commandArgs[0], commandArgs[1]) ? EXIT_SUCCESS : EXIT_FAILURE;
-    } else if (commandArgCount == 1
-               && (strncmp(common_CommandList, commandArgs[0], strlen(commandArgs[0])) == 0)) {  // "list"
-        status = _executeUserCommand(commandArgs[0], NULL) ? EXIT_SUCCESS : EXIT_FAILURE;
-    } else {
-        status = EXIT_FAILURE;
-        _displayUsage(argv[0]);
-    }
+    status = _fetchFile(fileName) ? EXIT_SUCCESS : EXIT_FAILURE;
 
     exit(status);
 }
