@@ -38,6 +38,11 @@ main(int argc, char *argv[])
         serverAddress.sin_addr.s_addr = inet_addr(serverIPAddress);
         serverAddress.sin_port = htons(serverPort);
 
+        int on = 1;
+        if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *) &on, sizeof(on)) < 0) {
+            LogFatal("setsockopt() failed");
+        }
+
         if (connect(sock, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
             LogFatal("connect() failed");
         }

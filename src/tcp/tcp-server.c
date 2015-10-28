@@ -107,6 +107,11 @@ main(int argc, char *argv[])
     server.address.sin_addr.s_addr = htonl(INADDR_ANY);
     server.address.sin_port = htons(server.port);
 
+    int on = 1;
+    if (setsockopt(server.socket, SOL_SOCKET, SO_REUSEADDR, (const char *) &on, sizeof(on)) < 0) {
+        LogFatal("setsockopt() failed");
+    }
+
     if (bind(server.socket, (struct sockaddr *) &(server.address), sizeof(server.address)) < 0) {
         LogFatal("bind() failed");
     }
@@ -119,26 +124,25 @@ main(int argc, char *argv[])
         LogFatal("listen() failed");
     }
 
-    for (;;) {
-        TCPClient client;
-        client.length = sizeof(client.address);
+    TCPClient client;
+    client.length = sizeof(client.address);
 
-        if ((client.socket = accept(server.socket, (struct sockaddr *) &(client.address), &client.length)) < 0) {
-            LogFatal("accept() failed");
-        }
-
-#if DEBUG
-        fprintf(stderr, "Handling client %s\n", inet_ntoa(client.address.sin_addr));
-#endif
-
-        TCPServer_ServeClient(&server, &client);
-
-#if DEBUG
-        fprintf(stderr, "Done with client %s\n", inet_ntoa(client.address.sin_addr));
-#endif
+    if ((client.socket = accept(server.socket, (struct sockaddr *) &(client.address), &client.length)) < 0) {
+        LogFatal("accept() failed");
     }
 
+#if DEBUG
+    fprintf(stderr, "Handling client %s\n", inet_ntoa(client.address.sin_addr));
+#endif
+
+    TCPServer_ServeClient(&server, &client);
+
+#if DEBUG
+    fprintf(stderr, "Done with client %s\n", inet_ntoa(client.address.sin_addr));
+#endif
+
     free(server.file);
+    close(server.socket);
 
     return 0;
 }
