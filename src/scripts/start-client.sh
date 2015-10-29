@@ -13,7 +13,8 @@ STCPCLIENT=../sctp/sctp-client
 QUICCLIENT=../quic/quic-client
 CCNCLIENT=../ccn/ccn-client
 
-CLIENTLIST=( $TCPCLIENT )
+# CLIENTLIST=( $TCPCLIENT )
+CLIENTLIST=( $UDPCLIENT )
 
 N=10
 

@@ -11,7 +11,8 @@ STCPSERVER=../sctp/sctp-server
 QUICSERVER=../quic/quic-server
 CCNSERVER=../ccn/ccn-server
 
-SERVERLIST=( $TCPSERVER )
+# SERVERLIST=( $TCPSERVER )
+SERVERLIST=( $UDPSERVER )
 
 N=10
 
@@ -27,7 +28,7 @@ do
         do
             OUTFILE=$SERVER_$s_$i.out
             ./create-file.sh $FILENAME $s 2> out
-            
+
             echo $SERVER $s $i
             echo $SERVER $PORT $FILENAME
 
