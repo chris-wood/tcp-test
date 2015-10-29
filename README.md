@@ -8,6 +8,7 @@ Open-source transport protocols under test include:
 
 - TCP
 - UDP
+- UDT 
 - SCTP
 - CCN
 - QUIC (http://www.chromium.org/quic)
