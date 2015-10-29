@@ -10,7 +10,7 @@
 int
 main(int argc, char *argv[])
 {
-    int sock;
+    int socketfd;
     struct sockaddr_in serverAddress;
     unsigned short serverPort;
     char *serverIPAddress;
@@ -29,7 +29,7 @@ main(int argc, char *argv[])
     fileName = argv[3];
 
     TimeBlock(stdout, {
-        if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+        if ((socketfd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
             LogFatal("socket() failed");
         }
 
@@ -39,17 +39,17 @@ main(int argc, char *argv[])
         serverAddress.sin_port = htons(serverPort);
 
         int on = 1;
-        if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *) &on, sizeof(on)) < 0) {
+        if (setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, (const char *) &on, sizeof(on)) < 0) {
             LogFatal("setsockopt() failed");
         }
 
-        if (connect(sock, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
+        if (connect(socketfd, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
             LogFatal("connect() failed");
         }
 
         fileNameLen = strlen(fileName);
 
-        if (send(sock, fileName, fileNameLen, 0) != fileNameLen) {
+        if (send(socketfd, fileName, fileNameLen, 0) != fileNameLen) {
             LogFatal("send() sent a different number of bytes than expected");
         }
 
@@ -59,7 +59,7 @@ main(int argc, char *argv[])
 #endif
         for (;;) {
 
-            bytesReceived = recv(sock, serverResponseBuffer, RCVBUFSIZE, 0);
+            bytesReceived = recv(socketfd, serverResponseBuffer, RCVBUFSIZE, 0);
             totalBytesRcvd += bytesReceived;
 
             // printf("%.*s", bytesReceived, serverResponseBuffer);
