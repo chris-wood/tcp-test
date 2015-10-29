@@ -68,14 +68,4 @@ size_t fileio_GetFileSize(const char *fileName);
  */
 bool fileio_DeleteFile(const char *fileName);
 
-/**
- * Return a PARCBuffer containing a string representing the list of files and their sizes in the directory
- * specified by 'dirName'. File names and sizes in the returned string are seperated by newlines. This
- * function does not recurse into subdirectories.
- *
- * The returned PARCBuffer must eventually be released via a call to parcBuffer_Release().
- *
- * @param dirName A pointer to a string containing the name of the directory to inspect.
- */
-PARCBuffer *fileio_CreateDirectoryListing(const char *dirName);
 #endif // fileio_h

@@ -102,56 +102,6 @@ fileio_GetFileSize(const char *filePath)
     return fileSize;
 }
 
-PARCBuffer *
-fileio_CreateDirectoryListing(const char *directoryName)
-{
-    DIR *directory = opendir(directoryName);
-
-    assertNotNull(directory, "Couldn't open directory '%s' for reading.", directoryName);
-
-    PARCBufferComposer *directoryListing = parcBufferComposer_Create();
-
-    struct dirent *entry;
-    while ((entry = readdir(directory)) != NULL) {
-        switch (entry->d_type) {
-            case DT_REG: {
-                // a regular file
-
-                // We need the full file path to check its size.
-                PARCBufferComposer *fullFilePath = parcBufferComposer_Create();
-                parcBufferComposer_Format(fullFilePath, "%s/%s", directoryName, entry->d_name);
-
-                PARCBuffer *fileNameBuffer = parcBufferComposer_ProduceBuffer(fullFilePath);
-                char *fullFilePathString = parcBuffer_ToString(fileNameBuffer);
-                parcBuffer_Release(&fileNameBuffer);
-
-                if (fileio_IsFileAvailable(fullFilePathString)) {
-                    parcBufferComposer_Format(directoryListing, "  %s  (%zu bytes)\n",
-                                              entry->d_name, fileio_GetFileSize(fullFilePathString));
-                }
-
-                parcBufferComposer_Release(&fullFilePath);
-                parcMemory_Deallocate((void **) &fullFilePathString);
-
-                break;
-            }
-
-            case DT_LNK:
-            case DT_DIR:
-            default:
-                // ignore everything but regular files
-                break;
-        }
-    }
-
-    closedir(directory);
-
-    PARCBuffer *result = parcBufferComposer_ProduceBuffer(directoryListing);
-    parcBufferComposer_Release(&directoryListing);
-
-    return result;
-}
-
 bool
 fileio_DeleteFile(const char *fileName)
 {
