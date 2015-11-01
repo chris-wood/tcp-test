@@ -75,22 +75,22 @@ main(int argc, char **argv)
 #if DEBUG
     	fprintf(stderr, "Error opening file %s\n", buffer);
 #endif
-		char *message;
-        asprintf(&message, "File %s does not exist", buffer);
+		char *errormessage;
+        asprintf(&errormessage, "File %s does not exist", buffer);
 
-        int length = strlen(message);
-        if (sendto(server.socket, message, strlen(message), 0,
+        int length = strlen(errormessage);
+        if (sendto(server.socket, errormessage, length, 0,
         	(struct sockaddr *) &clientAddress, clientlen) < 0) {
             LogFatal("sendto() failed");
         }
     } else {
+#if DEBUG
+        fprintf(stderr, "Starting to send data...\n");
+#endif
     	char fileBuffer[FILE_BUFFER_LENGTH];
         bzero(fileBuffer, FILE_BUFFER_LENGTH);
         size_t numBytesRead = 0;
         for (;;) {
-#if DEBUG
-            fprintf(stderr, "...\n");
-#endif
             numBytesRead = fread(fileBuffer, 1, FILE_BUFFER_LENGTH, fp);
             if (sendto(server.socket, fileBuffer, strlen(fileBuffer), 0,
             	(struct sockaddr *) &clientAddress, clientlen) < 0) {
@@ -102,6 +102,10 @@ main(int argc, char **argv)
             }
         }
     }
+
+#if DEBUG
+    fprintf(stderr, "Done sending data!\n");
+#endif
 
     close(server.socket);
 

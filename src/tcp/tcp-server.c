@@ -61,9 +61,6 @@ TCPServer_ServeClient(TCPServer *server, TCPClient *client)
         char fileBuffer[FILE_BUFFER_LENGTH];
         size_t numBytesRead = 0;
         for (;;) {
-
-            fprintf(stderr, "...\n");
-
             numBytesRead = fread(fileBuffer, 1, FILE_BUFFER_LENGTH, fp);
             if (send(client->socket, fileBuffer, numBytesRead, 0) != numBytesRead) {
                 LogFatal("Error sending data to the client\n");
