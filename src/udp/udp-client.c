@@ -36,7 +36,9 @@ main(int argc, char** argv)
         servaddr.sin_port = htons(serverPort);
 
         int fileNameLength = strlen(fileName);
-        if (send(socketfd, fileName, fileNameLength, 0) != fileNameLength) {
+
+        if (sendto(socketfd, fileName, fileNameLength, 0,
+            (struct sockaddr *) &servaddr, sizeof(servaddr)) != fileNameLength) {
             LogFatal("send() failed");
         }
 
@@ -48,7 +50,7 @@ main(int argc, char** argv)
             bytesReceived = recv(socketfd, serverResponseBuffer, RCVBUFSIZE, 0);
             totalBytesRcvd += bytesReceived;
 
-            printf("%.*s", bytesReceived, serverResponseBuffer);
+            // printf("%.*s", bytesReceived, serverResponseBuffer);
 
             if (bytesReceived < RCVBUFSIZE) {
                 break;

@@ -57,53 +57,55 @@ main(int argc, char **argv)
 
     clientlen = sizeof(clientAddress);
     char buffer[RCVBUFSIZE];
-    for (;;) {
-    	bzero(buffer, RCVBUFSIZE);
-    	numBytesReceived = recvfrom(server.socket, buffer, RCVBUFSIZE, 0,
-    		(struct sockaddr *) &clientAddress, &clientlen);
-    	if (numBytesReceived < 0) {
-    		LogFatal("recvfrom() failed");
-    	}
+	bzero(buffer, RCVBUFSIZE);
+	numBytesReceived = recvfrom(server.socket, buffer, RCVBUFSIZE, 0,
+		(struct sockaddr *) &clientAddress, &clientlen);
+	if (numBytesReceived < 0) {
+		LogFatal("recvfrom() failed");
+	}
 
-    	if (numBytesReceived < RCVBUFSIZE) {
-            buffer[numBytesReceived] = 0; // null terminator
-        } else {
-            // TODO: read more and expand the buffer
+	if (numBytesReceived < RCVBUFSIZE) {
+        buffer[numBytesReceived] = 0; // null terminator
+    } else {
+        // TODO: read more and expand the buffer
+    }
+
+    FILE *fp = fopen(buffer, "r");
+    if (fp == NULL) {
+#if DEBUG
+    	fprintf(stderr, "Error opening file %s\n", buffer);
+#endif
+		char *errormessage;
+        asprintf(&errormessage, "File %s does not exist", buffer);
+
+        int length = strlen(errormessage);
+        if (sendto(server.socket, errormessage, length, 0,
+        	(struct sockaddr *) &clientAddress, clientlen) < 0) {
+            LogFatal("sendto() failed");
         }
-
-        FILE *fp = fopen(buffer, "r");
-        if (fp == NULL) {
+    } else {
 #if DEBUG
-        	fprintf(stderr, "Error opening file %s\n", buffer);
+        fprintf(stderr, "Starting to send data...\n");
 #endif
-			char *message;
-            asprintf(&message, "File %s does not exist", buffer);
-
-            int length = strlen(message);
-            if (sendto(server.socket, message, strlen(message), 0,
+    	char fileBuffer[FILE_BUFFER_LENGTH];
+        bzero(fileBuffer, FILE_BUFFER_LENGTH);
+        size_t numBytesRead = 0;
+        for (;;) {
+            numBytesRead = fread(fileBuffer, 1, FILE_BUFFER_LENGTH, fp);
+            if (sendto(server.socket, fileBuffer, strlen(fileBuffer), 0,
             	(struct sockaddr *) &clientAddress, clientlen) < 0) {
-                LogFatal("sendto() failed");
+                LogFatal("Error sending data to the client\n");
             }
-        } else {
-        	char fileBuffer[FILE_BUFFER_LENGTH];
-            bzero(fileBuffer, FILE_BUFFER_LENGTH);
-            size_t numBytesRead = 0;
-            for (;;) {
-#if DEBUG
-                fprintf(stderr, "...\n");
-#endif
-                numBytesRead = fread(fileBuffer, 1, FILE_BUFFER_LENGTH, fp);
-                if (sendto(server.socket, fileBuffer, strlen(fileBuffer), 0,
-                	(struct sockaddr *) &clientAddress, clientlen) < 0) {
-                    LogFatal("Error sending data to the client\n");
-                }
 
-                if (numBytesRead != FILE_BUFFER_LENGTH) {
-                    break;
-                }
+            if (numBytesRead != FILE_BUFFER_LENGTH) {
+                break;
             }
         }
     }
+
+#if DEBUG
+    fprintf(stderr, "Done sending data!\n");
+#endif
 
     close(server.socket);
 
