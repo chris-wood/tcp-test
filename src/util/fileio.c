@@ -20,7 +20,7 @@
 #include "fileio.h"
 #include "common.h"
 
-PARCBuffer *
+uint8_t *
 fileio_GetFileChunk(const char *fileName, size_t chunkSize, uint64_t chunkNum)
 {
     FILE *file = fopen(fileName, "r");
@@ -35,31 +35,28 @@ fileio_GetFileChunk(const char *fileName, size_t chunkSize, uint64_t chunkNum)
 
     // If we're here, we were able to seek to the start of the desired chunk
 
-    PARCBuffer *result = parcBuffer_Allocate(chunkSize);
+    uint8_t *chunk = (uint8_t *) malloc(chunkSize);
 
     size_t numberOfBytesNeeded = chunkSize;
     size_t numberOfBytesRead = 0;       // # bytes read in each read.
     size_t totalNumberOfBytesRead = 0;  // Overall # of bytes read
 
     // Read until we get the required number of bytes.
+    size_t position = 0;
     while (numberOfBytesNeeded > 0
-           && (numberOfBytesRead = fread(parcBuffer_Overlay(result, 0), 1, numberOfBytesNeeded, file)) > 0) {
+           && (numberOfBytesRead = fread((void *) chunk + position, 1, numberOfBytesNeeded, file)) > 0) {
         numberOfBytesNeeded -= numberOfBytesRead;
-        parcBuffer_SetPosition(result, parcBuffer_Position(result) + numberOfBytesRead);
-
+        position += numberOfBytesRead
         totalNumberOfBytesRead += numberOfBytesRead;
     }
 
-    parcBuffer_SetLimit(result, totalNumberOfBytesRead);
-    parcBuffer_Flip(result);
-
     fclose(file);
 
-    return result;
+    return chunk;
 }
 
 size_t
-fileio_AppendFileChunk(const char *fileName, const PARCBuffer *chunk)
+fileio_AppendFileChunk(const char *fileName, const uint8_t *chunk, size_t length)
 {
     size_t numBytesWritten = 0;
 
@@ -67,12 +64,9 @@ fileio_AppendFileChunk(const char *fileName, const PARCBuffer *chunk)
 
     assertNotNull(file, "Could not open file '%s' - stopping.", fileName);
 
-    const void *buffer = parcBuffer_Overlay((PARCBuffer *) chunk, 0); // We're un-const'ing for parcBuffer_Overlay, but we do not change the buffer state.
+    numBytesWritten = fwrite((void *) chunk, 1, length, file);
 
-    numBytesWritten = fwrite(buffer, 1, parcBuffer_Remaining(chunk), file);
-
-    assertTrue(numBytesWritten == parcBuffer_Remaining(chunk),
-               "Couldn't write requested chunk to file: %s", fileName);
+    assertTrue(numBytesWritten == length, "Couldn't write requested chunk to file: %s", fileName);
 
     fclose(file);
 

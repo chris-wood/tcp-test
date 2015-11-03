@@ -6,7 +6,7 @@
  * file and provide the accompanying LICENSE file.
  */
 /**
- * @author Alan Walendowski, Computing Science Laboratory, PARC
+ * @author Alan Walendowski, Christopher A. Wood, Computing Science Laboratory, PARC
  * @copyright 2014-2015 Palo Alto Research Center, Inc. (PARC), A Xerox Company. All Rights Reserved.
  */
 
@@ -17,26 +17,26 @@
 
 /**
  * Given a fileName and chunk number, retrieve that chunk from the specified file. The
- * contents of the chunk are returned in a PARCBuffer that must eventually be released
- * via a call to parcBuffer_Release(&buf). The chunkNumber is 0-based.
+ * contents of the chunk are returned an array that must eventually be freed.
  *
  * @param [in] fileName A pointer to a string containing the name of the file to read from.
  * @param [in] chunkSize The maximum number of bytes to be returned in each chunk.
  * @param [in] chunkNumber The 0-based number of chunk to return from the file.
  *
- * @return A newly created PARCBuffer containing the contents of the specified chunk.
+ * @return A newly malloc'd byte array.
  */
-PARCBuffer *fileio_GetFileChunk(const char *fileName, size_t chunkSize, uint64_t chunkNumber);
+uint8_t *fileio_GetFileChunk(const char *fileName, size_t chunkSize, uint64_t chunkNumber);
 
 /**
- * Given a PARCBuffer, append its contents to the file specified by the given fileName.
+ * Given a byte array, append its contents to the file specified by the given fileName.
  *
  * @param [in] fileName A pointer to a string containing the name of the file to write to.
- * @param [in] chunk A pointer to a PARCBuffer containing the bytes to append to the file.
+ * @param [in] chunk A byte array pointer.
+ * @param [in] length The number of bytes in the array to write
  *
  * @return The number of bytes written to the file.
  */
-size_t fileio_AppendFileChunk(const char *fileName, const PARCBuffer *chunk);
+size_t fileio_AppendFileChunk(const char *fileName, const uint8_t *chunk, size_t length);
 
 /**
  * Check if a file exists and is readable.
@@ -68,14 +68,4 @@ size_t fileio_GetFileSize(const char *fileName);
  */
 bool fileio_DeleteFile(const char *fileName);
 
-/**
- * Return a PARCBuffer containing a string representing the list of files and their sizes in the directory
- * specified by 'dirName'. File names and sizes in the returned string are seperated by newlines. This
- * function does not recurse into subdirectories.
- *
- * The returned PARCBuffer must eventually be released via a call to parcBuffer_Release().
- *
- * @param dirName A pointer to a string containing the name of the directory to inspect.
- */
-PARCBuffer *fileio_CreateDirectoryListing(const char *dirName);
 #endif // fileio_h

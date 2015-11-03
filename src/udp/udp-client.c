@@ -19,13 +19,13 @@ main(int argc, char** argv)
     int totalBytesRcvd;
 
     if (argc != 4) {
-        fprintf(stderr, "usage: %s <Server IP Address> <File Name> <Port>\n", argv[0]);
+        fprintf(stderr, "usage: %s <Server IP Address> <Port> <File Name>\n", argv[0]);
         exit(1);
     }
 
     char *serverIPAddress = argv[1];
-    char *fileName = argv[2];
-    int serverPort = atoi(argv[3]);
+    int serverPort = atoi(argv[2]);
+    char *fileName = argv[3];
 
     TimeBlock(stdout, {
         socketfd = socket(AF_INET, SOCK_DGRAM, 0);
